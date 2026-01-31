@@ -1,0 +1,158 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  MANAGER
+  ADMIN
+  USER
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum TokenType {
+  VERIFICATION
+  PASSWORD_RESET
+  REACTIVATION
+}
+
+model User {
+  id                String    @id @default(uuid())
+  name              String    @db.VarChar(100)
+  email             String    @unique @db.VarChar(255)
+  role              Role      @default(USER)
+  isVerified        Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  password          String    @db.VarChar(255)
+  passwordChangedAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  //relations 
+
+  cart         Cart?
+  orders       Order[]
+  refreshToken RefreshToken?
+  shortTokens  ShortToken[]
+
+  @@map("users")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(1500)
+  price       Decimal  @db.Decimal(10, 2)
+  stock       Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  //relations
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model Cart {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  //relations
+
+  user  User       @relation(fields: [userId], references: [id])
+  items CartItem[]
+
+  @@index([userId])
+  @@map("carts")
+}
+
+model CartItem {
+  id        String @id @default(uuid())
+  quantity  Int
+  cartId    String
+  productId String
+
+  //relations
+  cart    Cart    @relation(fields: [cartId], references: [id])
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([cartId])
+  @@index([productId])
+  @@map("cart_items")
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  totalAmount Decimal     @db.Decimal(10, 2)
+  status      OrderStatus @default(PENDING)
+  items       OrderItem[]
+  userId      String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  //relations
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  quantity  Int
+  price     Decimal @db.Decimal(10, 2)
+  orderId   String
+  productId String
+
+  //relations
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_items")
+}
+
+model ShortToken {
+  id        String    @id @default(uuid())
+  token     String    @unique
+  type      TokenType
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  userId    String
+
+  ///relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("short_tokens")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  //relations 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_token")
+}

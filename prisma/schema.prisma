@@ -33,7 +33,8 @@ model User {
   email             String    @unique @db.VarChar(255)
   role              Role      @default(USER)
   isVerified        Boolean   @default(false)
-  isActive          Boolean   @default(true)
+  isDeleted         Boolean   @default(false)
+  isBanned          Boolean   @default(false)
   password          String    @db.VarChar(255)
   passwordChangedAt DateTime?
   createdAt         DateTime  @default(now())

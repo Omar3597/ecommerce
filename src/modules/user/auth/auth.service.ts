@@ -1,14 +1,37 @@
 import bcrypt from "bcrypt";
 import AppError from "../../../common/utils/appError";
-import { SignupInput, LoginInput } from "./auth.dto";
+import { SignupInput, LoginInput, forgotPassword } from "./auth.dto";
 import { prisma } from "../../../lib/prisma";
 import { generateAccessToken, generateRefreshToken } from "./auth.tokens";
 import crypto from "crypto";
 import { getConfig } from "../../../config/config";
+import { AuthTokenEmailUseCase, EmailTokenType } from "./auth.usecase";
+import { PrismaClient } from "../../../../generated/prisma/client";
 
 const config = getConfig();
 
 export class AuthService {
+  private buildAuthUser(user: { id: string; name: string; role: string }) {
+    return {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+    };
+  }
+
+  private hashRefreshToken(refreshToken: string) {
+    return crypto
+      .createHmac("sha256", config.refreshSecret)
+      .update(refreshToken)
+      .digest("hex");
+  }
+
+  private getRefreshTokenExpiryDate(days = 7) {
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + days);
+    return expiresAt;
+  }
+
   async registerUser(data: SignupInput) {
     // 1. check existing user
     const existingUser = await prisma.user.findUnique({
@@ -75,14 +98,10 @@ export class AuthService {
     const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken();
 
-    const hashedRefreshToken = crypto
-      .createHmac("sha256", config.refreshSecret)
-      .update(refreshToken)
-      .digest("hex");
+    const hashedRefreshToken = this.hashRefreshToken(refreshToken);
 
     // Set token expiration (7 days)
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    const expiresAt = this.getRefreshTokenExpiryDate();
 
     // Store refresh token - update existing or create new
     await prisma.refreshToken.upsert({
@@ -93,11 +112,7 @@ export class AuthService {
 
     // Return auth response
     return {
-      user: {
-        id: user.id,
-        name: user.name,
-        role: user.role,
-      },
+      user: this.buildAuthUser(user),
       accessToken,
       refreshToken,
     };
@@ -110,13 +125,10 @@ export class AuthService {
     }
 
     // 2. Find the refresh token in database
-    const hashToken = crypto
-      .createHmac("sha256", config.refreshSecret)
-      .update(refreshToken)
-      .digest("hex");
+    const hashedRefreshToken = this.hashRefreshToken(refreshToken);
 
     const storedToken = await prisma.refreshToken.findUnique({
-      where: { token: hashToken, expiresAt: { gt: new Date() } },
+      where: { token: hashedRefreshToken, expiresAt: { gt: new Date() } },
       include: { user: true },
     });
 
@@ -131,7 +143,9 @@ export class AuthService {
       storedToken.user.isBanned ||
       storedToken.user.isDeleted
     ) {
-      await prisma.refreshToken.delete({ where: { token: hashToken } });
+      await prisma.refreshToken.delete({
+        where: { token: hashedRefreshToken },
+      });
       throw new AppError(401, "user account no longer exists");
     }
 
@@ -142,11 +156,7 @@ export class AuthService {
     );
 
     return {
-      user: {
-        id: storedToken.user.id,
-        name: storedToken.user.name,
-        role: storedToken.user.role,
-      },
+      user: this.buildAuthUser(storedToken.user),
       accessToken,
     };
   }

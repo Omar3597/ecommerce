@@ -2,8 +2,20 @@ import express from "express";
 import morgan from "morgan";
 import { errHandler } from "./common/errors/error";
 import { getConfig } from "./config/config";
+import userRouter from "./modules/user/user.routes";
+import cookieParser from "cookie-parser";
+import cors from "cors";
 
 const app = express();
+
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  }),
+);
+
+app.use(cookieParser());
 
 app.use(express.json());
 
@@ -13,9 +25,9 @@ if (env == "development") {
   app.use(morgan("dev"));
 }
 
-app.use("/api/v1/users");
-app.use("/api/v1/products");
-app.use("/api/v1/orders");
+app.use("/api/v1/users", userRouter);
+// app.use("/api/v1/products");
+// app.use("/api/v1/orders");
 
 app.use("*", (req, res, next) => {
   res.status(404).json({

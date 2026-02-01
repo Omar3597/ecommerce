@@ -3,10 +3,13 @@ import { getConfig } from "../../config/config.js";
 import AppError from "../utils/appError.js";
 import { ZodError } from "zod";
 
-const sendErrorDev = (err: AppError, res: Response) => {
-  res.status(err.statusCode).json({
-    status: err.status,
-    message: err.message,
+const sendErrorDev = (err: any, res: Response) => {
+  const statusCode = err.statusCode || 500;
+  const status = err.status || "error";
+
+  res.status(statusCode).json({
+    status,
+    message: err.message || "Something went wrong",
     stack: err.stack,
     error: err,
   });

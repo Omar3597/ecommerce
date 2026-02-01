@@ -4,14 +4,33 @@ dotenv.config({ path: ".env" });
 interface IConfig {
   port: number;
   env: "development" | "production";
+  baseURL: string;
   jwtSecret: string;
   refreshSecret: string;
+  mailUser: string;
+  mailPass: string;
 }
 
 export const getConfig = (): IConfig => {
-  const { PORT, NODE_ENV, JWT_SECRET, REFRESH_TOKEN_SECRET } = process.env;
+  const {
+    PORT,
+    NODE_ENV,
+    JWT_SECRET,
+    REFRESH_TOKEN_SECRET,
+    BASE_URL,
+    MAIL_USER,
+    MAIL_PASS,
+  } = process.env;
 
-  if (!PORT || !NODE_ENV || !JWT_SECRET || !REFRESH_TOKEN_SECRET) {
+  if (
+    !PORT ||
+    !NODE_ENV ||
+    !JWT_SECRET ||
+    !REFRESH_TOKEN_SECRET ||
+    !BASE_URL ||
+    !MAIL_USER ||
+    !MAIL_PASS
+  ) {
     throw new Error("Missing required environment variables");
   }
 
@@ -26,7 +45,10 @@ export const getConfig = (): IConfig => {
   return {
     port: Number(PORT),
     env: NODE_ENV,
+    baseURL: BASE_URL,
     jwtSecret: JWT_SECRET,
     refreshSecret: REFRESH_TOKEN_SECRET,
+    mailUser: MAIL_USER,
+    mailPass: MAIL_PASS,
   };
 };

@@ -31,7 +31,11 @@ const confirmPassword = (data: any, ctx: z.RefinementCtx) => {
 
 export const signupSchema = z
   .object({
-    name: z.string().min(3, "Name must be at least 3 characters").max(50),
+    name: z
+      .string()
+      .trim()
+      .min(3, "Name must be at least 3 characters")
+      .max(50),
     email: z.string().email("Invalid email address"),
     password: passwordSchema,
     passwordConfirm: z.string().min(1, "Password confirmation is required"),
@@ -72,3 +76,4 @@ export const sensitiveActionSchema = z.object({
 
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type forgotPassword = z.infer<typeof forgotPasswordSchema>;

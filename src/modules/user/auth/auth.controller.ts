@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { AuthService } from "./auth.service";
 import { catchAsync } from "../../../common/middlewares/catchAsync";
-import { signupSchema, loginSchema } from "./auth.dto";
+import { signupSchema, loginSchema, forgotPasswordSchema } from "./auth.dto";
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -55,6 +55,18 @@ export class AuthController {
         user,
         accessToken,
       },
+    });
+  });
+
+  public forgotPassword = catchAsync(async (req: Request, res: Response) => {
+    const validatedData = forgotPasswordSchema.parse(req.body);
+
+    await this.authService.forgotPassword(validatedData);
+
+    res.status(200).json({
+      status: "success",
+      message:
+        "If an account with that email exists, a reset link will be sent.",
     });
   });
 }

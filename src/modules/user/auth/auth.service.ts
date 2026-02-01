@@ -160,4 +160,21 @@ export class AuthService {
       accessToken,
     };
   }
+
+  async forgotPassword(data: forgotPassword) {
+    const user = await prisma.user.findUnique({
+      where: {
+        email: data.email,
+        isBanned: false,
+        isDeleted: false,
+        isVerified: true,
+      },
+    });
+
+    if (!user) {
+      throw new AppError(404, "User is not exists");
+    }
+
+    new AuthTokenEmailUseCase(prisma).send(user, EmailTokenType.PASSWORD_RESET);
+  }
 }

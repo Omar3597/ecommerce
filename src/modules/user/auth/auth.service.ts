@@ -8,8 +8,8 @@ import { getConfig } from "../../../config/config";
 
 const config = getConfig();
 
-class AuthService {
-  async signup(data: SignupInput) {
+export class AuthService {
+  async registerUser(data: SignupInput) {
     // 1. check existing user
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },

@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { getConfig } from "../../../config/config";
+import crypto from "crypto";
 
 const config = getConfig();
 
@@ -10,5 +11,5 @@ export const generateAccessToken = (userId: string, role: string): string => {
 };
 
 export const generateRefreshToken = (): string => {
-  return require("crypto").randomBytes(40).toString("hex");
+  return crypto.randomBytes(40).toString("hex");
 };

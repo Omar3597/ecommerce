@@ -3,6 +3,10 @@ import AppError from "../../../common/utils/appError";
 import { SignupInput, LoginInput } from "./auth.dto";
 import { prisma } from "../../../lib/prisma";
 import { generateAccessToken, generateRefreshToken } from "./auth.tokens";
+import crypto from "crypto";
+import { getConfig } from "../../../config/config";
+
+const config = getConfig();
 
 class AuthService {
   async signup(data: SignupInput) {
@@ -71,6 +75,11 @@ class AuthService {
     const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken();
 
+    const hashedRefreshToken = crypto
+      .createHmac("sha256", config.refreshSecret)
+      .update(refreshToken)
+      .digest("hex");
+
     // Set token expiration (7 days)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
@@ -78,8 +87,8 @@ class AuthService {
     // Store refresh token - update existing or create new
     await prisma.refreshToken.upsert({
       where: { userId: user.id },
-      update: { token: refreshToken, expiresAt },
-      create: { userId: user.id, token: refreshToken, expiresAt },
+      update: { token: hashedRefreshToken, expiresAt },
+      create: { userId: user.id, token: hashedRefreshToken, expiresAt },
     });
 
     // Return auth response
@@ -91,6 +100,54 @@ class AuthService {
       },
       accessToken,
       refreshToken,
+    };
+  }
+
+  async refresh(refreshToken: string | undefined) {
+    // 1. Check if refresh token is provided
+    if (!refreshToken || refreshToken.trim() === "") {
+      throw new AppError(401, "Refresh token is required");
+    }
+
+    // 2. Find the refresh token in database
+    const hashToken = crypto
+      .createHmac("sha256", config.refreshSecret)
+      .update(refreshToken)
+      .digest("hex");
+
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { token: hashToken, expiresAt: { gt: new Date() } },
+      include: { user: true },
+    });
+
+    // 3. Check if token exists
+    if (!storedToken) {
+      throw new AppError(401, "Invalid refresh token");
+    }
+
+    // 5. Check if user still exists and is active
+    if (
+      !storedToken.user ||
+      storedToken.user.isBanned ||
+      storedToken.user.isDeleted
+    ) {
+      await prisma.refreshToken.delete({ where: { token: hashToken } });
+      throw new AppError(401, "user account no longer exists");
+    }
+
+    // 8. Generate new access token
+    const accessToken = generateAccessToken(
+      storedToken.user.id,
+      storedToken.user.role,
+    );
+
+    return {
+      user: {
+        id: storedToken.user.id,
+        name: storedToken.user.name,
+        role: storedToken.user.role,
+      },
+      accessToken,
     };
   }
 }

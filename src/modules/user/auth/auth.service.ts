@@ -2,35 +2,16 @@ import bcrypt from "bcrypt";
 import AppError from "../../../common/utils/appError";
 import { SignupInput, LoginInput, forgotPasswordInput } from "./auth.validator";
 import { prisma } from "../../../lib/prisma";
-import { generateAccessToken, generateRefreshToken } from "./auth.tokens";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  hashRefreshToken,
+  getRefreshTokenExpiryDate,
+} from "./auth.tokens";
 import crypto from "crypto";
-import { getConfig } from "../../../config/config";
 import { AuthTokenEmailUseCase, EmailTokenType } from "./auth.usecase";
 
-const config = getConfig();
-
 export class AuthService {
-  private buildAuthUser(user: { id: string; name: string; role: string }) {
-    return {
-      id: user.id,
-      name: user.name,
-      role: user.role,
-    };
-  }
-
-  private hashRefreshToken(refreshToken: string) {
-    return crypto
-      .createHmac("sha256", config.refreshSecret)
-      .update(refreshToken)
-      .digest("hex");
-  }
-
-  private getRefreshTokenExpiryDate(days = 7) {
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + days);
-    return expiresAt;
-  }
-
   async registerUser(data: SignupInput) {
     // 1. check existing user
     const existingUser = await prisma.user.findUnique({
@@ -67,6 +48,12 @@ export class AuthService {
         password: hashedPassword,
       },
     });
+
+    new AuthTokenEmailUseCase(prisma).send(
+      newUser,
+      EmailTokenType.VERIFICATION,
+    );
+
     return newUser;
   }
 
@@ -90,10 +77,10 @@ export class AuthService {
     const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken();
 
-    const hashedRefreshToken = this.hashRefreshToken(refreshToken);
+    const hashedRefreshToken = hashRefreshToken(refreshToken);
 
     // Set token expiration (7 days)
-    const expiresAt = this.getRefreshTokenExpiryDate();
+    const expiresAt = getRefreshTokenExpiryDate();
 
     // Store refresh token - update existing or create new
     await prisma.refreshToken.upsert({
@@ -104,7 +91,7 @@ export class AuthService {
 
     // Return auth response
     return {
-      user: this.buildAuthUser(user),
+      user: user,
       accessToken,
       refreshToken,
     };
@@ -117,9 +104,9 @@ export class AuthService {
     }
 
     // 2. Find the refresh token in database
-    const hashedRefreshToken = this.hashRefreshToken(refreshToken);
+    const hashedRefreshToken = hashRefreshToken(refreshToken);
 
-    const storedToken = await prisma.refreshToken.findUnique({
+    const storedToken = await prisma.refreshToken.findFirst({
       where: { token: hashedRefreshToken, expiresAt: { gt: new Date() } },
       include: { user: true },
     });
@@ -148,13 +135,13 @@ export class AuthService {
     );
 
     return {
-      user: this.buildAuthUser(storedToken.user),
+      user: storedToken.user,
       accessToken,
     };
   }
 
   async forgotPassword(data: forgotPasswordInput) {
-    const user = await prisma.user.findUnique({
+    const user = await prisma.user.findFirst({
       where: {
         email: data.email,
         isBanned: false,
@@ -167,7 +154,9 @@ export class AuthService {
       throw new AppError(404, "User is not exists");
     }
 
-    new AuthTokenEmailUseCase(prisma).send(user, EmailTokenType.PASSWORD_RESET);
+    new AuthTokenEmailUseCase(prisma)
+      .send(user, EmailTokenType.PASSWORD_RESET)
+      .catch((err) => console.error("fail sending email: " + err));
   }
 
   async resetPassword(token: string | undefined, password: string) {
@@ -175,7 +164,7 @@ export class AuthService {
 
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-    const storedToken = await prisma.shortToken.findUnique({
+    const storedToken = await prisma.shortToken.findFirst({
       where: {
         token: hashedToken,
         type: "PASSWORD_RESET",
@@ -209,7 +198,7 @@ export class AuthService {
 
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-    const storedToken = await prisma.shortToken.findUnique({
+    const storedToken = await prisma.shortToken.findFirst({
       where: {
         token: hashedToken,
         type: "VERIFICATION",

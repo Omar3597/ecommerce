@@ -13,3 +13,16 @@ export const generateAccessToken = (userId: string, role: string): string => {
 export const generateRefreshToken = (): string => {
   return crypto.randomBytes(40).toString("hex");
 };
+
+export const hashRefreshToken = (refreshToken: string) => {
+  return crypto
+    .createHmac("sha256", config.refreshSecret)
+    .update(refreshToken)
+    .digest("hex");
+};
+
+export const getRefreshTokenExpiryDate = (days = 7) => {
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + days);
+  return expiresAt;
+};

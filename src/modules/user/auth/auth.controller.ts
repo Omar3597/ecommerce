@@ -29,8 +29,6 @@ export class AuthController {
 
     const user = await this.authService.registerUser(validatedData);
 
-    new AuthTokenEmailUseCase(prisma).send(user, EmailTokenType.VERIFICATION);
-
     res.status(201).json({
       status: "success",
       data: PublicUserDto.parse(user),
@@ -48,7 +46,7 @@ export class AuthController {
     res.status(200).json({
       status: "success",
       data: {
-        user,
+        user: PublicUserDto.parse(user),
         accessToken,
       },
     });
@@ -62,7 +60,7 @@ export class AuthController {
     res.status(200).json({
       status: "success",
       data: {
-        user,
+        user: PublicUserDto.parse(user),
         accessToken,
       },
     });

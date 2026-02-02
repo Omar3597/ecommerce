@@ -7,7 +7,8 @@ import {
   forgotPasswordSchema,
   passwordResetSchema,
 } from "./auth.validator";
-
+import { AuthTokenEmailUseCase, EmailTokenType } from "./auth.usecase";
+import { prisma } from "../../../lib/prisma";
 import { PublicUserDto } from "./auth.dto";
 
 export class AuthController {
@@ -27,6 +28,8 @@ export class AuthController {
     const validatedData = signupSchema.parse(req.body);
 
     const user = await this.authService.registerUser(validatedData);
+
+    new AuthTokenEmailUseCase(prisma).send(user, EmailTokenType.VERIFICATION);
 
     res.status(201).json({
       status: "success",
@@ -91,6 +94,20 @@ export class AuthController {
       status: "success",
       message:
         "Password has been reset successfully. You can now log in with your new password.",
+    });
+  });
+
+  public verifyEmail = catchAsync(async (req: Request, res: Response) => {
+    const token = Array.isArray(req.params.token)
+      ? req.params.token[0]
+      : req.params.token;
+
+    await this.authService.verifyEmail(token);
+
+    res.status(200).json({
+      status: "success",
+      message:
+        "Email verified successfully! You can now use all features of the system.",
     });
   });
 }

@@ -203,4 +203,32 @@ export class AuthService {
       }),
     ]);
   }
+
+  async verifyEmail(token: string | undefined) {
+    if (!token) throw new AppError(400, "Verification token is required");
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const storedToken = await prisma.shortToken.findUnique({
+      where: {
+        token: hashedToken,
+        type: "VERIFICATION",
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!storedToken) {
+      throw new AppError(400, "Verification token is invalid or has expired");
+    }
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: storedToken.userId },
+        data: { isVerified: true },
+      }),
+      prisma.shortToken.delete({
+        where: { id: storedToken.id },
+      }),
+    ]);
+  }
 }

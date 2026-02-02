@@ -1,12 +1,11 @@
 import bcrypt from "bcrypt";
 import AppError from "../../../common/utils/appError";
-import { SignupInput, LoginInput, forgotPassword } from "./auth.dto";
+import { SignupInput, LoginInput, forgotPasswordInput } from "./auth.validator";
 import { prisma } from "../../../lib/prisma";
 import { generateAccessToken, generateRefreshToken } from "./auth.tokens";
 import crypto from "crypto";
 import { getConfig } from "../../../config/config";
 import { AuthTokenEmailUseCase, EmailTokenType } from "./auth.usecase";
-import { PrismaClient } from "../../../../generated/prisma/client";
 
 const config = getConfig();
 
@@ -67,13 +66,6 @@ export class AuthService {
         email,
         password: hashedPassword,
       },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-      },
     });
     return newUser;
   }
@@ -83,7 +75,7 @@ export class AuthService {
     const user = await prisma.user.findUnique({ where: { email: data.email } });
 
     // Security: Prevent user enumeration by always running password comparison
-    if (!user || user.isDeleted || user.isBanned) {
+    if (!user || user.isDeleted || user.isBanned || !user.isVerified) {
       await bcrypt.compare(data.password, "$2b$12$invalidhash"); // Dummy comparison
       throw new AppError(401, "Invalid email or password");
     }
@@ -161,7 +153,7 @@ export class AuthService {
     };
   }
 
-  async forgotPassword(data: forgotPassword) {
+  async forgotPassword(data: forgotPasswordInput) {
     const user = await prisma.user.findUnique({
       where: {
         email: data.email,
@@ -176,5 +168,39 @@ export class AuthService {
     }
 
     new AuthTokenEmailUseCase(prisma).send(user, EmailTokenType.PASSWORD_RESET);
+  }
+
+  async resetPassword(token: string | undefined, password: string) {
+    if (!token) throw new AppError(400, "Token is required");
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const storedToken = await prisma.shortToken.findUnique({
+      where: {
+        token: hashedToken,
+        type: "PASSWORD_RESET",
+        expiresAt: { gt: new Date() },
+      },
+      include: { user: true },
+    });
+
+    if (!storedToken) {
+      throw new AppError(400, "Token is invalid or has expired");
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: storedToken.userId },
+        data: { password: hashedPassword, passwordChangedAt: new Date() },
+      }),
+      prisma.shortToken.delete({
+        where: { id: storedToken.id },
+      }),
+      prisma.refreshToken.deleteMany({
+        where: { userId: storedToken.userId },
+      }),
+    ]);
   }
 }

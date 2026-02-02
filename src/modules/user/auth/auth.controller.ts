@@ -1,7 +1,14 @@
 import { Request, Response } from "express";
 import { AuthService } from "./auth.service";
 import { catchAsync } from "../../../common/middlewares/catchAsync";
-import { signupSchema, loginSchema, forgotPasswordSchema } from "./auth.dto";
+import {
+  signupSchema,
+  loginSchema,
+  forgotPasswordSchema,
+  passwordResetSchema,
+} from "./auth.validator";
+
+import { PublicUserDto } from "./auth.dto";
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -23,7 +30,7 @@ export class AuthController {
 
     res.status(201).json({
       status: "success",
-      data: { user },
+      data: PublicUserDto.parse(user),
     });
   });
 
@@ -67,6 +74,23 @@ export class AuthController {
       status: "success",
       message:
         "If an account with that email exists, a reset link will be sent.",
+    });
+  });
+
+  public resetPassword = catchAsync(async (req: Request, res: Response) => {
+    const validatedData = passwordResetSchema.parse(req.body);
+
+    const { password } = validatedData;
+    const token = Array.isArray(req.params.token)
+      ? req.params.token[0]
+      : req.params.token;
+
+    await this.authService.resetPassword(token, password);
+
+    res.status(200).json({
+      status: "success",
+      message:
+        "Password has been reset successfully. You can now log in with your new password.",
     });
   });
 }

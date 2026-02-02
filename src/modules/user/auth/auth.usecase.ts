@@ -25,7 +25,7 @@ const tokenEmailConfig: Record<EmailTokenType, TokenEmailConfig> = {
     sendEmail: (email) => email.sendPasswordReset(),
   },
   [EmailTokenType.VERIFICATION]: {
-    endpoint: "verify",
+    endpoint: "verify-email",
     expiresInMinutes: 10,
     sendEmail: (email) => email.sendVerificationEmail(),
   },

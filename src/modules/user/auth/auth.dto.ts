@@ -3,7 +3,7 @@ import { z } from "zod";
 const UserSchema = z.object({
   id: z.string(),
   name: z.string(),
-  email: z.string().email(),
+  email: z.email(),
   role: z.enum(["USER", "ADMIN", "MANAGER"]),
   password: z.string(),
   isDeleted: z.boolean(),

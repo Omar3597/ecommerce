@@ -220,4 +220,10 @@ export class AuthService {
       }),
     ]);
   }
+
+  async logout(userId: string) {
+    await prisma.refreshToken.delete({
+      where: { userId },
+    });
+  }
 }

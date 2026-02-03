@@ -7,9 +7,8 @@ import {
   forgotPasswordSchema,
   passwordResetSchema,
 } from "./auth.validator";
-import { AuthTokenEmailUseCase, EmailTokenType } from "./auth.usecase";
-import { prisma } from "../../../lib/prisma";
 import { PublicUserDto } from "./auth.dto";
+import { assertAuth } from "../../../common/guards/assert-auth";
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -107,5 +106,17 @@ export class AuthController {
       message:
         "Email verified successfully! You can now use all features of the system.",
     });
+  });
+
+  public logout = catchAsync(async (req: Request, res: Response) => {
+    assertAuth(req);
+
+    await this.authService.logout(req.user.id);
+    res.cookie("refreshToken", "", {
+      httpOnly: true,
+      expires: new Date(0),
+    });
+
+    res.status(204).send();
   });
 }

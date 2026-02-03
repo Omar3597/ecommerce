@@ -6,13 +6,15 @@ import AppError from "../../common/utils/appError";
 import jwt from "jsonwebtoken";
 
 interface JwtPayload {
-  _id: string;
+  id: string;
+  role: string;
   iat: number;
+  exp: number;
 }
 
 const config = getConfig();
 
-const protect = catchAsync(
+export const protect = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
 
@@ -30,7 +32,7 @@ const protect = catchAsync(
       return next(new AppError(401, "Invalid or expired token"));
     }
 
-    const user = await prisma.user.findUnique({ where: { id: payload._id } });
+    const user = await prisma.user.findUnique({ where: { id: payload.id } });
 
     if (!user) {
       return next(new AppError(401, "User no longer exists"));

@@ -46,6 +46,7 @@ model User {
   orders       Order[]
   refreshToken RefreshToken?
   shortTokens  ShortToken[]
+  reviews      Review[]
 
   @@map("users")
 }
@@ -56,12 +57,16 @@ model Product {
   description String?  @db.VarChar(1500)
   price       Decimal  @db.Decimal(10, 2)
   stock       Int      @default(1)
+  isHidden    Boolean  @default(false)
+  ratingAvg   Float    @default(0)
+  ratingCount Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   //relations
   cartItems  CartItem[]
   orderItems OrderItem[]
+  reviews    Review[]
 
   @@map("products")
 }
@@ -156,4 +161,23 @@ model RefreshToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("refresh_token")
+}
+
+model Review {
+  id      String  @id @default(uuid())
+  rating  Int
+  comment String? @db.VarChar(1000)
+
+  userId    String
+  productId String
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)
+
+  @@unique([userId, productId])
+  @@index([productId])
 }

@@ -1,10 +1,12 @@
 import express from "express";
 import morgan from "morgan";
+import cors from "cors";
+import hpp from "hpp";
 import { errHandler } from "./common/errors/error";
 import { getConfig } from "./config/config";
 import userRouter from "./modules/user/user.routes";
+import productRouter from "./modules/product/product.routes";
 import cookieParser from "cookie-parser";
-import cors from "cors";
 
 const app = express();
 
@@ -19,6 +21,8 @@ app.use(cookieParser());
 
 app.use(express.json());
 
+app.use(hpp());
+
 const { env } = getConfig();
 
 if (env == "development") {
@@ -26,7 +30,7 @@ if (env == "development") {
 }
 
 app.use("/api/v1/users", userRouter);
-// app.use("/api/v1/products");
+app.use("/api/v1/products", productRouter);
 // app.use("/api/v1/orders");
 
 app.use("*", (req, res, next) => {

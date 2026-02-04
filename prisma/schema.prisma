@@ -52,23 +52,38 @@ model User {
 }
 
 model Product {
-  id          String   @id @default(uuid())
-  name        String   @db.VarChar(100)
-  description String?  @db.VarChar(1500)
-  price       Decimal  @db.Decimal(10, 2)
-  stock       Int      @default(1)
-  isHidden    Boolean  @default(false)
-  ratingAvg   Float    @default(0)
-  ratingCount Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id          String  @id @default(uuid())
+  name        String  @db.VarChar(100)
+  description String? @db.VarChar(1500)
+  summary     String  @db.VarChar(200)
+  price       Decimal @db.Decimal(10, 2)
+  stock       Int     @default(1)
+  isHidden    Boolean @default(false)
+  ratingAvg   Float   @default(0)
+  ratingCount Int     @default(0)
+
+  soldQuantity Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   //relations
+  category   Category    @relation(fields: [categoryId], references: [id])
   cartItems  CartItem[]
   orderItems OrderItem[]
   reviews    Review[]
+  categoryId String
 
   @@map("products")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(100)
+  slug      String   @unique @db.VarChar(120)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
 }
 
 model Cart {
@@ -94,8 +109,7 @@ model CartItem {
   cart    Cart    @relation(fields: [cartId], references: [id])
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  @@index([cartId])
-  @@index([productId])
+  @@unique([cartId, productId])
   @@map("cart_items")
 }
 
@@ -176,7 +190,6 @@ model Review {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  isDeleted Boolean  @default(false)
 
   @@unique([userId, productId])
   @@index([productId])

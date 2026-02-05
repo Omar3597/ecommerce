@@ -11,7 +11,7 @@ const strongPassword = (value: string): boolean => {
   });
 };
 
-export const passwordSchema = z
+const passwordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters")
   .refine(strongPassword, {
@@ -29,52 +29,61 @@ const confirmPassword = (data: any, ctx: z.RefinementCtx) => {
   }
 };
 
-export const signupSchema = z
-  .object({
-    name: z
-      .string()
-      .trim()
-      .min(3, "Name must be at least 3 characters")
-      .max(50),
-    email: z.string().email("Invalid email address"),
-    password: passwordSchema,
-    passwordConfirm: z.string().min(1, "Password confirmation is required"),
-  })
-  .required()
-  .superRefine(confirmPassword);
-
-export const loginSchema = z
-  .object({
-    email: z.string().email("Invalid email address"),
-    password: z.string().min(1, "Password is required"),
-  })
-  .required();
-
-export const forgotPasswordSchema = z
-  .object({
-    email: z.string().email("Invalid email address"),
-  })
-  .required();
-
-export const reactivateUserSchema = z
-  .object({
-    email: z.string().email("Invalid email address"),
-  })
-  .required();
-
-export const passwordResetSchema = z
-  .object({
-    password: passwordSchema,
-    passwordConfirm: z.string().min(1, "Password confirmation is required"),
-  })
-  .required()
-  .superRefine(confirmPassword);
-
-export const sensitiveActionSchema = z.object({
-  password: passwordSchema,
+export const signupSchema = z.object({
+  body: z
+    .object({
+      name: z
+        .string()
+        .trim()
+        .min(3, "Name must be at least 3 characters")
+        .max(50),
+      email: z.email("Invalid email address"),
+      password: passwordSchema,
+      passwordConfirm: z.string().min(1, "Password confirmation is required"),
+    })
+    .required()
+    .superRefine(confirmPassword),
 });
 
-export type SignupInput = z.infer<typeof signupSchema>;
-export type LoginInput = z.infer<typeof loginSchema>;
-export type forgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export const loginSchema = z.object({
+  body: z
+    .object({
+      email: z.string().email("Invalid email address"),
+      password: z.string().min(1, "Password is required"),
+    })
+    .required(),
+});
+
+export const forgotPasswordSchema = z.object({
+  body: z
+    .object({
+      email: z.string().email("Invalid email address"),
+    })
+    .required(),
+});
+
+export const passwordResetSchema = z.object({
+  params: z
+    .object({
+      token: z.string().length(64),
+    })
+    .required(),
+  body: z
+    .object({
+      password: passwordSchema,
+      passwordConfirm: z.string().min(1, "Password confirmation is required"),
+    })
+    .required()
+    .superRefine(confirmPassword),
+});
+
+export const verifyEmailSchema = z.object({
+  params: z.object({
+    token: z.string().length(64),
+  }),
+});
+
+export type SignupInput = z.infer<typeof signupSchema>["body"];
+export type LoginInput = z.infer<typeof loginSchema>["body"];
+export type forgotPasswordInput = z.infer<typeof forgotPasswordSchema>["body"];
 export type passwordResetInput = z.infer<typeof passwordResetSchema>;

@@ -3,6 +3,7 @@ import { CartService } from "./cart.service";
 import { catchAsync } from "../../common/middlewares/catchAsync";
 import { assertAuth } from "../../common/guards/assert-auth";
 import { getCartDto, updateCartItemDto } from "./cart.dto";
+import { updateCartItemSchema } from "./cart.validator";
 
 export class CartController {
   constructor(private readonly cartService: CartService) {}
@@ -33,11 +34,10 @@ export class CartController {
   public updateItem = catchAsync(async (req: Request, res: Response) => {
     assertAuth(req);
 
-    const itemId = Array.isArray(req.params.itemId)
-      ? req.params.itemId[0]
-      : req.params.itemId;
+    const validated = updateCartItemSchema.parse(req);
 
-    const { quantity } = req.body;
+    const { itemId } = validated.params;
+    const { quantity } = validated.body;
 
     const updatedItem = await this.cartService.updateItemQuantity(
       req.user.id,

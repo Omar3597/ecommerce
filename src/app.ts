@@ -2,11 +2,12 @@ import express from "express";
 import morgan from "morgan";
 import cors from "cors";
 import hpp from "hpp";
+import cookieParser from "cookie-parser";
 import { errHandler } from "./common/errors/error";
 import { getConfig } from "./config/config";
 import userRouter from "./modules/user/user.routes";
 import productRouter from "./modules/product/product.routes";
-import cookieParser from "cookie-parser";
+import cartRouter from "./modules/cart/cart.routes";
 
 const app = express();
 
@@ -31,7 +32,7 @@ if (env == "development") {
 
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/products", productRouter);
-// app.use("/api/v1/orders");
+app.use("/api/v1/cart", cartRouter);
 
 app.use("*", (req, res, next) => {
   res.status(404).json({

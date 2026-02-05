@@ -12,7 +12,7 @@ export const updateCartItemSchema = z.object({
   }),
 });
 
-export const addProductSchema = z.object({
+export const addProductToCartSchema = z.object({
   body: z.object({
     productId: z.uuid("Invalid product ID"),
   }),

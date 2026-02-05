@@ -2,11 +2,11 @@ import { z } from "zod";
 
 export const updateCartItemSchema = z.object({
   params: z.object({
-    itemId: z.uuid("Invalid Cart Item ID"),
+    itemId: z.uuid("Invalid cart item ID"),
   }),
   body: z.object({
     quantity: z
-      .number()
+      .number("Quantity is required")
       .int("Quantity must be an integer")
       .positive("Quantity must be greater than 0"),
   }),
@@ -20,6 +20,6 @@ export const addProductToCartSchema = z.object({
 
 export const removeCartItemSchema = z.object({
   params: z.object({
-    itemId: z.uuid(),
+    itemId: z.uuid("Invalid cart item ID"),
   }),
 });

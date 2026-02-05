@@ -12,7 +12,7 @@ const strongPassword = (value: string): boolean => {
 };
 
 const passwordSchema = z
-  .string()
+  .string("password is required")
   .min(8, "Password must be at least 8 characters")
   .refine(strongPassword, {
     message:
@@ -33,13 +33,13 @@ export const signupSchema = z.object({
   body: z
     .object({
       name: z
-        .string()
+        .string("Name is required")
         .trim()
         .min(3, "Name must be at least 3 characters")
         .max(50),
-      email: z.email("Invalid email address"),
+      email: z.string("Email is required").email("Invalid email address"),
       password: passwordSchema,
-      passwordConfirm: z.string().min(1, "Password confirmation is required"),
+      passwordConfirm: z.string("Password confirmation is required"),
     })
     .required()
     .superRefine(confirmPassword),
@@ -48,8 +48,8 @@ export const signupSchema = z.object({
 export const loginSchema = z.object({
   body: z
     .object({
-      email: z.email("Invalid email address"),
-      password: z.string().min(1, "Password is required"),
+      email: z.string("Email is required").email("Invalid email address"),
+      password: z.string("Password is required").min(1, "Password is required"),
     })
     .required(),
 });
@@ -57,7 +57,7 @@ export const loginSchema = z.object({
 export const forgotPasswordSchema = z.object({
   body: z
     .object({
-      email: z.email("Invalid email address"),
+      email: z.string("Email is required").email("Invalid email address"),
     })
     .required(),
 });
@@ -65,13 +65,13 @@ export const forgotPasswordSchema = z.object({
 export const passwordResetSchema = z.object({
   params: z
     .object({
-      token: z.string().length(64),
+      token: z.string("Token is required").length(64),
     })
     .required(),
   body: z
     .object({
       password: passwordSchema,
-      passwordConfirm: z.string().min(1, "Password confirmation is required"),
+      passwordConfirm: z.string("Password confirmation is required"),
     })
     .required()
     .superRefine(confirmPassword),
@@ -79,8 +79,35 @@ export const passwordResetSchema = z.object({
 
 export const verifyEmailSchema = z.object({
   params: z.object({
-    token: z.string().length(64),
+    token: z.string("Token is required").length(64),
   }),
+});
+
+export const sensetiveActionSchema = z.object({
+  body: z
+    .object({
+      password: passwordSchema,
+    })
+    .required(),
+});
+
+export const updateUserDataSchema = z.object({
+  body: z
+    .object({
+      newPassword: passwordSchema.optional(),
+      newPasswordConfirm: z
+        .string()
+        .min(1, "Password confirmation is required")
+        .optional(),
+      name: z
+        .string()
+        .trim()
+        .min(3, "Name must be at least 3 characters")
+        .max(50)
+        .optional(),
+      email: z.email("Invalid email address").optional(),
+    })
+    .superRefine(confirmPassword),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>["body"];

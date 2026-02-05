@@ -9,6 +9,6 @@ const productService = new ProductService();
 const productController = new ProductController(productService);
 
 router.get("/", productController.getAllProducts);
-router.get("/:id", protect, productController.getOneProduct);
+router.get("/:productId", protect, productController.getOneProduct);
 
 export default router;

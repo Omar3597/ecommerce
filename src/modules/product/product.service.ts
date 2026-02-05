@@ -29,9 +29,9 @@ export class ProductService {
     return products;
   }
 
-  async getProductById(id: string) {
+  async getProductById(productId: string) {
     const product = await prisma.product.findUnique({
-      where: { id, isHidden: false },
+      where: { id: productId, isHidden: false },
       select: {
         id: true,
         name: true,

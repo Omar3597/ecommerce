@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { ProductService } from "./product.service";
 import { catchAsync } from "../../common/middlewares/catchAsync";
+import { getProductSchema } from "./product.validator";
 
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
@@ -16,9 +17,10 @@ export class ProductController {
   });
 
   public getOneProduct = catchAsync(async (req: Request, res: Response) => {
-    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const validatedData = getProductSchema.parse(req);
+    const { productId } = validatedData.params;
 
-    const product = await this.productService.getProductById(id);
+    const product = await this.productService.getProductById(productId);
 
     res.status(200).json({
       status: "success",

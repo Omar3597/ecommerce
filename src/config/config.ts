@@ -9,6 +9,7 @@ interface IConfig {
   refreshSecret: string;
   mailUser: string;
   mailPass: string;
+  maxCartQuantity: number;
 }
 
 export const getConfig = (): IConfig => {
@@ -20,6 +21,7 @@ export const getConfig = (): IConfig => {
     BASE_URL,
     MAIL_USER,
     MAIL_PASS,
+    MAX_CART_QUANTITY,
   } = process.env;
 
   if (
@@ -29,7 +31,8 @@ export const getConfig = (): IConfig => {
     !REFRESH_TOKEN_SECRET ||
     !BASE_URL ||
     !MAIL_USER ||
-    !MAIL_PASS
+    !MAIL_PASS ||
+    !MAX_CART_QUANTITY
   ) {
     throw new Error("Missing required environment variables");
   }
@@ -50,5 +53,6 @@ export const getConfig = (): IConfig => {
     refreshSecret: REFRESH_TOKEN_SECRET,
     mailUser: MAIL_USER,
     mailPass: MAIL_PASS,
+    maxCartQuantity: Number(MAX_CART_QUANTITY),
   };
 };

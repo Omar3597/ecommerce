@@ -1,6 +1,9 @@
 import { prisma } from "../../lib/prisma";
 import AppError from "../../common/utils/appError";
 import { ProductFeatures } from "./product.features";
+import { getConfig } from "../../config/config";
+
+const config = getConfig();
 
 export class ProductService {
   async getAllProducts(query: Record<string, any>) {
@@ -9,13 +12,21 @@ export class ProductService {
 
     if (query.category) where.category = { slug: query.category };
 
-    return prisma.product.findMany({
+    console.log(where);
+    const products = await prisma.product.findMany({
       where,
       select: Object.keys(select || {}).length ? select : {},
       orderBy,
       skip,
       take,
     });
+
+    products.forEach(
+      (product) =>
+        (product.stock = Math.min(product.stock, config.maxCartQuantity)),
+    );
+
+    return products;
   }
 
   async getProductById(id: string) {
@@ -29,6 +40,7 @@ export class ProductService {
         ratingCount: true,
         summary: true,
         price: true,
+        stock: true,
         category: { select: { id: true, name: true } },
         reviews: {
           select: {
@@ -45,8 +57,10 @@ export class ProductService {
     });
 
     if (!product) {
-      throw new AppError(404, "Product not found");
+      throw new AppError(404, "Product is not found");
     }
+
+    product.stock = Math.min(product.stock, config.maxCartQuantity);
 
     return product;
   }

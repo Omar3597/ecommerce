@@ -3,7 +3,11 @@ import { CartService } from "./cart.service";
 import { catchAsync } from "../../common/middlewares/catchAsync";
 import { assertAuth } from "../../common/guards/assert-auth";
 import { getCartDto, updateCartItemDto } from "./cart.dto";
-import { updateCartItemSchema } from "./cart.validator";
+import {
+  addProductSchema,
+  removeCartItemSchema,
+  updateCartItemSchema,
+} from "./cart.validator";
 
 export class CartController {
   constructor(private readonly cartService: CartService) {}
@@ -21,7 +25,9 @@ export class CartController {
   public addItem = catchAsync(async (req: Request, res: Response) => {
     assertAuth(req);
 
-    const { productId } = req.body;
+    const validatedData = addProductSchema.parse(req);
+
+    const { productId } = validatedData.body;
 
     const cartItem = await this.cartService.addToCart(req.user.id, productId);
 
@@ -54,9 +60,9 @@ export class CartController {
   public removeItem = catchAsync(async (req: Request, res: Response) => {
     assertAuth(req);
 
-    const itemId = Array.isArray(req.params.itemId)
-      ? req.params.itemId[0]
-      : req.params.itemId;
+    const validatedData = removeCartItemSchema.parse(req);
+
+    const { itemId } = validatedData.params;
 
     await this.cartService.removeItem(req.user.id, itemId);
 

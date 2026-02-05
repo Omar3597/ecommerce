@@ -159,7 +159,7 @@ export class AuthService {
       .catch((err) => console.error("fail sending email: " + err));
   }
 
-  async resetPassword(token: string | undefined, password: string) {
+  async resetPassword(token: string, password: string) {
     if (!token) throw new AppError(400, "Token is required");
 
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");

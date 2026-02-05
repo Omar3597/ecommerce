@@ -22,6 +22,7 @@ const PRODUCT_FIELDS_WHITELIST = [
   "description",
   "summary",
   "price",
+  "stock",
   "ratingAvg",
   "ratingCount",
 ];
@@ -101,6 +102,7 @@ export class ProductFeatures extends QueryBuilder {
       this.setFieldFilter(rawKey, undefined, rawValue);
     });
 
+    this.where.isHidden = false;
     return this;
   }
 
@@ -112,6 +114,7 @@ export class ProductFeatures extends QueryBuilder {
         summary: true,
         price: true,
         ratingAvg: true,
+        stock: true,
         ratingCount: true,
       };
       return this;

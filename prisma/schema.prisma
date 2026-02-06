@@ -25,12 +25,14 @@ enum TokenType {
   VERIFICATION
   PASSWORD_RESET
   REACTIVATION
+  EMAIL_CHANGE
 }
 
 model User {
   id                String    @id @default(uuid())
   name              String    @db.VarChar(100)
   email             String    @unique @db.VarChar(255)
+  pendingEmail      String?   @unique @db.VarChar(255)
   role              Role      @default(USER)
   isVerified        Boolean   @default(false)
   isDeleted         Boolean   @default(false)

@@ -154,6 +154,10 @@ export class AuthService {
       throw new AppError(404, "User is not exists");
     }
 
+    await prisma.shortToken.deleteMany({
+      where: { userId: user.id, type: "PASSWORD_RESET" },
+    });
+
     new AuthTokenEmailUseCase(prisma)
       .send(user, EmailTokenType.PASSWORD_RESET)
       .catch((err) => console.error("fail sending email: " + err));

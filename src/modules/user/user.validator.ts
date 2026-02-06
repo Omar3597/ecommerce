@@ -11,4 +11,15 @@ export const updateProfileSchema = z.object({
   }),
 });
 
+export const updatePasswordSchema = z.object({
+  body: z
+    .object({
+      currentPassword: passwordSchema,
+      newPassword: passwordSchema,
+      newPasswordConfirm: z.string("New password confirmation is required"),
+    })
+    .required(),
+});
+
 export type updateProfileInput = z.infer<typeof updateProfileSchema>["body"];
+export type updatePasswordInput = z.infer<typeof updatePasswordSchema>["body"];

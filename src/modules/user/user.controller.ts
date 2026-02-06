@@ -2,10 +2,27 @@ import { Request, Response } from "express";
 import { UserService } from "./user.service";
 import { catchAsync } from "../../common/middlewares/catchAsync";
 import { assertAuth } from "../../common/guards/assert-auth";
+import { updateProfileSchema } from "./user.validator";
 import { PublicUserDto } from "./user.dto";
 
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  public updateProfile = catchAsync(async (req: Request, res: Response) => {
+    assertAuth(req);
+
+    const validatedData = updateProfileSchema.parse(req);
+
+    const user = await this.userService.updateProfile(
+      req.user,
+      validatedData.body,
+    );
+
+    res.status(200).json({
+      status: "success",
+      data: PublicUserDto.parse(user),
+    });
+  });
 
   public getMe = catchAsync(async (req: Request, res: Response) => {
     assertAuth(req);

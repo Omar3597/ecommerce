@@ -11,7 +11,7 @@ const strongPassword = (value: string): boolean => {
   });
 };
 
-const passwordSchema = z
+export const passwordSchema = z
   .string("password is required")
   .min(8, "Password must be at least 8 characters")
   .refine(strongPassword, {
@@ -37,7 +37,10 @@ export const signupSchema = z.object({
         .trim()
         .min(3, "Name must be at least 3 characters")
         .max(50),
-      email: z.string("Email is required").email("Invalid email address"),
+      email: z
+        .string("Email is required")
+        .email("Invalid email address")
+        .transform((v) => v.toLowerCase()),
       password: passwordSchema,
       passwordConfirm: z.string("Password confirmation is required"),
     })
@@ -48,7 +51,10 @@ export const signupSchema = z.object({
 export const loginSchema = z.object({
   body: z
     .object({
-      email: z.string("Email is required").email("Invalid email address"),
+      email: z
+        .string("Email is required")
+        .email("Invalid email address")
+        .transform((v) => v.toLowerCase()),
       password: z.string("Password is required").min(1, "Password is required"),
     })
     .required(),
@@ -57,7 +63,10 @@ export const loginSchema = z.object({
 export const forgotPasswordSchema = z.object({
   body: z
     .object({
-      email: z.string("Email is required").email("Invalid email address"),
+      email: z
+        .string("Email is required")
+        .email("Invalid email address")
+        .transform((v) => v.toLowerCase()),
     })
     .required(),
 });
@@ -81,33 +90,6 @@ export const verifyEmailSchema = z.object({
   params: z.object({
     token: z.string("Token is required").length(64),
   }),
-});
-
-export const sensetiveActionSchema = z.object({
-  body: z
-    .object({
-      password: passwordSchema,
-    })
-    .required(),
-});
-
-export const updateUserDataSchema = z.object({
-  body: z
-    .object({
-      newPassword: passwordSchema.optional(),
-      newPasswordConfirm: z
-        .string()
-        .min(1, "Password confirmation is required")
-        .optional(),
-      name: z
-        .string()
-        .trim()
-        .min(3, "Name must be at least 3 characters")
-        .max(50)
-        .optional(),
-      email: z.email("Invalid email address").optional(),
-    })
-    .superRefine(confirmPassword),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>["body"];

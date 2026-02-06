@@ -128,6 +128,14 @@ export class Email {
     const html = this.generateStyledHTML(message, buttonText);
     await this.send(html, "Reactivate Your Account");
   }
+
+  async sendEmailChangeVerificationEmail() {
+    const message =
+      "You requested to change your account email. Click the button below to verify your new email address:";
+    const buttonText = "Verify New Email";
+    const html = this.generateStyledHTML(message, buttonText);
+    await this.send(html, "Verify Your New Email Address");
+  }
 }
 
 export default Email;

@@ -10,10 +10,12 @@ export enum EmailTokenType {
   PASSWORD_RESET = "PASSWORD_RESET",
   VERIFICATION = "VERIFICATION",
   REACTIVATION = "REACTIVATION",
+  EMAIL_CHANGE = "EMAIL_CHANGE",
 }
 
 type TokenEmailConfig = {
   endpoint: string;
+  routePrefix: string;
   expiresInMinutes: number;
   sendEmail: (emailService: Email) => Promise<void>;
 };
@@ -21,26 +23,38 @@ type TokenEmailConfig = {
 const tokenEmailConfig: Record<EmailTokenType, TokenEmailConfig> = {
   [EmailTokenType.PASSWORD_RESET]: {
     endpoint: "reset-password",
+    routePrefix: "/users/auth",
     expiresInMinutes: 10,
     sendEmail: (email) => email.sendPasswordReset(),
   },
   [EmailTokenType.VERIFICATION]: {
     endpoint: "verify-email",
+    routePrefix: "/users/auth",
     expiresInMinutes: 10,
     sendEmail: (email) => email.sendVerificationEmail(),
   },
   [EmailTokenType.REACTIVATION]: {
     endpoint: "reactivate",
+    routePrefix: "/users/auth",
     expiresInMinutes: 10,
     sendEmail: (email) => email.sendReactivationEmail(),
+  },
+  [EmailTokenType.EMAIL_CHANGE]: {
+    endpoint: "",
+    routePrefix: "/users/me/email-change/verify",
+    expiresInMinutes: 10,
+    sendEmail: (email) => email.sendEmailChangeVerificationEmail(),
   },
 };
 
 export class AuthTokenEmailUseCase {
   constructor(private prisma: PrismaClient) {}
 
-  private buildUrl(endpoint: string, rawToken: string) {
-    return `${config.baseURL}/users/auth/${endpoint}/${rawToken}`;
+  private buildUrl(routePrefix: string, endpoint: string, rawToken: string) {
+    const cleanPrefix = routePrefix.replace(/\/+$/, "");
+    const cleanEndpoint = endpoint.replace(/^\/+|\/+$/g, "");
+    const path = cleanEndpoint ? `${cleanPrefix}/${cleanEndpoint}` : cleanPrefix;
+    return `${config.baseURL}${path}/${rawToken}`;
   }
 
   async send(user: User, type: EmailTokenType) {
@@ -65,7 +79,7 @@ export class AuthTokenEmailUseCase {
       },
     });
 
-    const url = this.buildUrl(tokenConfig.endpoint, token);
+    const url = this.buildUrl(tokenConfig.routePrefix, tokenConfig.endpoint, token);
     const emailService = new Email(user, url);
 
     try {

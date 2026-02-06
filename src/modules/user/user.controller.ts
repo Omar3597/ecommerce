@@ -2,7 +2,12 @@ import { Request, Response } from "express";
 import { UserService } from "./user.service";
 import { catchAsync } from "../../common/middlewares/catchAsync";
 import { assertAuth } from "../../common/guards/assert-auth";
-import { updateProfileSchema, updatePasswordSchema } from "./user.validator";
+import {
+  requestEmailChangeSchema,
+  updateProfileSchema,
+  updatePasswordSchema,
+  verifyEmailChangeSchema,
+} from "./user.validator";
 import { PublicUserDto } from "./user.dto";
 
 export class UserController {
@@ -38,14 +43,40 @@ export class UserController {
 
     const validatedData = updatePasswordSchema.parse(req);
 
-    const user = await this.userService.updatePassword(
-      req.user,
-      validatedData.body,
-    );
+    await this.userService.updatePassword(req.user, validatedData.body);
 
     res.status(200).json({
       status: "success",
-      data: PublicUserDto.parse(user),
+      message:
+        "Password has been updated successfully. You can now log in with your new password.",
+    });
+  });
+
+  public requestEmailChange = catchAsync(
+    async (req: Request, res: Response) => {
+      assertAuth(req);
+
+      const validatedData = requestEmailChangeSchema.parse(req);
+
+      await this.userService.requestEmailChange(req.user, validatedData.body);
+
+      res.status(200).json({
+        status: "success",
+        message: "Verification link sent to your new email address.",
+      });
+    },
+  );
+
+  public verifyEmailChange = catchAsync(async (req: Request, res: Response) => {
+    assertAuth(req);
+
+    const validatedData = verifyEmailChangeSchema.parse(req);
+
+    await this.userService.verifyEmailChange(req.user, validatedData.params);
+
+    res.status(200).json({
+      status: "success",
+      message: "Email has been updated successfully.",
     });
   });
 }

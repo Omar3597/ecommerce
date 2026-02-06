@@ -16,5 +16,7 @@ router.use(protect);
 router.get("/me", userController.getMe);
 router.patch("/me/update-profile", userController.updateProfile);
 router.patch("/me/update-password", userController.updatePassword);
+router.post("/me/email-change", userController.requestEmailChange);
+router.post("/me/email-change/verify/:token", userController.verifyEmailChange);
 
 export default router;

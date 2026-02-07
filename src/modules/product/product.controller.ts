@@ -3,6 +3,7 @@ import { ProductService } from "./product.service";
 import { catchAsync } from "../../common/middlewares/catchAsync";
 import {
   createProductSchema,
+  deleteProductSchema,
   getProductSchema,
   updateProductSchema,
 } from "./product.validator";
@@ -44,6 +45,15 @@ export class ProductController {
       status: "success",
       data: { product },
     });
+  });
+
+  public deleteProduct = catchAsync(async (req: Request, res: Response) => {
+    const validatedData = deleteProductSchema.parse(req);
+    const { productId } = validatedData.params;
+
+    await this.productService.deleteProduct(productId);
+
+    res.status(204).send();
   });
 
   public getOneProduct = catchAsync(async (req: Request, res: Response) => {

@@ -118,6 +118,21 @@ export class ProductService {
     });
   }
 
+  async deleteProduct(productId: string) {
+    const [, deletedProduct] = await prisma.$transaction([
+      prisma.review.deleteMany({
+        where: { productId },
+      }),
+      prisma.product.deleteMany({
+        where: { id: productId },
+      }),
+    ]);
+
+    if (deletedProduct.count === 0) {
+      throw new AppError(404, "Product is not found");
+    }
+  }
+
   async getProductById(productId: string) {
     const product = await prisma.product.findUnique({
       where: { id: productId, isHidden: false },

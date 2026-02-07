@@ -83,5 +83,11 @@ export const updateProductSchema = z.object({
   body: updateProductBodySchema,
 });
 
+export const deleteProductSchema = z.object({
+  params: z.object({
+    productId: z.uuid("Invalid product ID"),
+  }),
+});
+
 export type UpdateProductInput = z.infer<typeof updateProductSchema>["body"];
 export type CreateProductInput = z.infer<typeof createProductSchema>["body"];

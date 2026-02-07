@@ -2,10 +2,48 @@ import { prisma } from "../../lib/prisma";
 import AppError from "../../common/utils/appError";
 import { ProductFeatures } from "./product.features";
 import { getConfig } from "../../config/config";
+import { CreateProductInput, UpdateProductInput } from "./product.validator";
 
 const config = getConfig();
 
 export class ProductService {
+  async createProduct(data: CreateProductInput) {
+    const category = await prisma.category.findUnique({
+      where: { id: data.categoryId },
+      select: { id: true },
+    });
+
+    if (!category) {
+      throw new AppError(404, "Category is not found");
+    }
+
+    return prisma.product.create({
+      data: {
+        name: data.name,
+        summary: data.summary,
+        description: data.description,
+        price: data.price,
+        stock: data.stock,
+        categoryId: data.categoryId,
+        isHidden: data.isHidden ?? false,
+      },
+      select: {
+        id: true,
+        name: true,
+        summary: true,
+        description: true,
+        price: true,
+        stock: true,
+        isHidden: true,
+        category: {
+          select: { id: true, name: true, slug: true },
+        },
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
   async getAllProducts(query: Record<string, any>) {
     const pf = new ProductFeatures(query).filter().limitFields();
     const { where, select, orderBy, skip, take } = pf.build();
@@ -27,6 +65,57 @@ export class ProductService {
     );
 
     return products;
+  }
+
+  async updateProduct(productId: string, data: UpdateProductInput) {
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true },
+    });
+
+    if (!product) {
+      throw new AppError(404, "Product is not found");
+    }
+
+    if (data.categoryId) {
+      const category = await prisma.category.findUnique({
+        where: { id: data.categoryId },
+        select: { id: true },
+      });
+
+      if (!category) {
+        throw new AppError(404, "Category is not found");
+      }
+    }
+
+    return prisma.product.update({
+      where: { id: productId },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.description !== undefined && {
+          description: data.description,
+        }),
+        ...(data.summary !== undefined && { summary: data.summary }),
+        ...(data.price !== undefined && { price: data.price }),
+        ...(data.stock !== undefined && { stock: data.stock }),
+        ...(data.isHidden !== undefined && { isHidden: data.isHidden }),
+        ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
+      },
+      select: {
+        id: true,
+        name: true,
+        summary: true,
+        description: true,
+        price: true,
+        stock: true,
+        isHidden: true,
+        category: {
+          select: { id: true, name: true, slug: true },
+        },
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
   async getProductById(productId: string) {

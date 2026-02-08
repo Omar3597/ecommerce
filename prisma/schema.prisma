@@ -45,6 +45,7 @@ model User {
   //relations 
 
   cart         Cart?
+  addresses    Address[]
   orders       Order[]
   refreshToken RefreshToken?
   shortTokens  ShortToken[]
@@ -127,8 +128,9 @@ model Order {
   updatedAt   DateTime    @updatedAt
 
   //relations
-  user  User        @relation(fields: [userId], references: [id])
-  items OrderItem[]
+  user            User                  @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+  addressSnapshot OrderAddressSnapshot?
 
   @@index([userId])
   @@map("orders")
@@ -137,6 +139,7 @@ model Order {
 model OrderItem {
   id            String  @id @default(uuid())
   quantity      Int
+  // snapshot fields used by order service
   priceSnapshot Decimal @db.Decimal(10, 2)
   nameSnapshot  String  @db.VarChar(100)
   orderId       String
@@ -149,6 +152,40 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  fullName  String   @db.VarChar(100)
+  phone     String   @db.VarChar(30)
+  city      String   @db.VarChar(100)
+  street    String   @db.VarChar(200)
+  building  String?  @db.VarChar(100)
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  //relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+model OrderAddressSnapshot {
+  id        String   @id @default(uuid())
+  fullName  String   @db.VarChar(100)
+  phone     String   @db.VarChar(30)
+  city      String   @db.VarChar(100)
+  street    String   @db.VarChar(200)
+  building  String?  @db.VarChar(100)
+  orderId   String   @unique
+  createdAt DateTime @default(now())
+
+  //relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_address_snapshots")
 }
 
 model ShortToken {

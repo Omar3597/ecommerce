@@ -6,6 +6,21 @@ import { CreateProductInput, UpdateProductInput } from "./product.validator";
 
 const config = getConfig();
 
+const productAdminSelect = {
+  id: true,
+  name: true,
+  summary: true,
+  description: true,
+  price: true,
+  stock: true,
+  isHidden: true,
+  category: {
+    select: { id: true, name: true, slug: true },
+  },
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 export class ProductService {
   async createProduct(data: CreateProductInput) {
     const category = await prisma.category.findUnique({
@@ -27,20 +42,7 @@ export class ProductService {
         categoryId: data.categoryId,
         isHidden: data.isHidden ?? false,
       },
-      select: {
-        id: true,
-        name: true,
-        summary: true,
-        description: true,
-        price: true,
-        stock: true,
-        isHidden: true,
-        category: {
-          select: { id: true, name: true, slug: true },
-        },
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: productAdminSelect,
     });
   }
 
@@ -101,20 +103,7 @@ export class ProductService {
         ...(data.isHidden !== undefined && { isHidden: data.isHidden }),
         ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
       },
-      select: {
-        id: true,
-        name: true,
-        summary: true,
-        description: true,
-        price: true,
-        stock: true,
-        isHidden: true,
-        category: {
-          select: { id: true, name: true, slug: true },
-        },
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: productAdminSelect,
     });
   }
 

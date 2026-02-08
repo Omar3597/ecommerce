@@ -8,6 +8,8 @@ import { getConfig } from "./config/config";
 import userRouter from "./modules/user/user.routes";
 import productRouter from "./modules/product/product.routes";
 import cartRouter from "./modules/cart/cart.routes";
+import adminRouter from "./modules/admin/admin.routes";
+import { protect } from "./common/middlewares/protect";
 
 const app = express();
 
@@ -33,6 +35,7 @@ if (env == "development") {
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/products", productRouter);
 app.use("/api/v1/cart", cartRouter);
+app.use("/api/v1/admin", protect, adminRouter);
 
 app.use("*", (req, res, next) => {
   res.status(404).json({

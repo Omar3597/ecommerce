@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 import mjml from "mjml";
 import { htmlToText } from "html-to-text";
 import { type User } from "../../../generated/prisma/client";
-import { getConfig } from "../../config/config";
+import { getConfig } from "../../config/env";
 
 const config = getConfig();
 

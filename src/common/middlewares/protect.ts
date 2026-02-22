@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { getConfig } from "../../config/config";
+import { getConfig } from "../../config/env";
 import { prisma } from "../../lib/prisma";
 import { catchAsync } from "../../common/middlewares/catchAsync";
 import AppError from "../../common/utils/appError";

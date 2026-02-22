@@ -1,4 +1,4 @@
-import { getConfig } from "./config/config";
+import { getConfig } from "./config/env";
 import app from "./app";
 
 process.on("uncaughtException", (err: Error) => {

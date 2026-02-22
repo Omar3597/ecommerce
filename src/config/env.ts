@@ -10,6 +10,7 @@ interface IConfig {
   mailUser: string;
   mailPass: string;
   maxCartQuantity: number;
+  dbUrl: string;
 }
 
 export const getConfig = (): IConfig => {
@@ -22,6 +23,7 @@ export const getConfig = (): IConfig => {
     MAIL_USER,
     MAIL_PASS,
     MAX_CART_QUANTITY,
+    DATABASE_URL,
   } = process.env;
 
   if (
@@ -32,7 +34,8 @@ export const getConfig = (): IConfig => {
     !BASE_URL ||
     !MAIL_USER ||
     !MAIL_PASS ||
-    !MAX_CART_QUANTITY
+    !MAX_CART_QUANTITY ||
+    !DATABASE_URL
   ) {
     throw new Error("Missing required environment variables");
   }
@@ -54,5 +57,6 @@ export const getConfig = (): IConfig => {
     mailUser: MAIL_USER,
     mailPass: MAIL_PASS,
     maxCartQuantity: Number(MAX_CART_QUANTITY),
+    dbUrl: DATABASE_URL,
   };
 };

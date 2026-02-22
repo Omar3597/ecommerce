@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/prisma";
 import AppError from "../../common/utils/appError";
-import { getConfig } from "../../config/config";
+import { getConfig } from "../../config/env";
 
 const config = getConfig();
 

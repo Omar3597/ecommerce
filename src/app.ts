@@ -4,7 +4,7 @@ import cors from "cors";
 import hpp from "hpp";
 import cookieParser from "cookie-parser";
 import { errHandler } from "./common/errors/error";
-import { getConfig } from "./config/config";
+import { getConfig } from "./config/env";
 import userRouter from "./modules/user/user.routes";
 import productRouter from "./modules/product/product.routes";
 import cartRouter from "./modules/cart/cart.routes";

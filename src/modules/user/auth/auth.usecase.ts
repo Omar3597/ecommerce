@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { User, PrismaClient } from "../../../../generated/prisma/client";
 import Email from "../../../common/utils/email";
 import AppError from "../../../common/utils/appError";
-import { getConfig } from "../../../config/config";
+import { getConfig } from "../../../config/env";
 
 const config = getConfig();
 
@@ -53,7 +53,9 @@ export class AuthTokenEmailUseCase {
   private buildUrl(routePrefix: string, endpoint: string, rawToken: string) {
     const cleanPrefix = routePrefix.replace(/\/+$/, "");
     const cleanEndpoint = endpoint.replace(/^\/+|\/+$/g, "");
-    const path = cleanEndpoint ? `${cleanPrefix}/${cleanEndpoint}` : cleanPrefix;
+    const path = cleanEndpoint
+      ? `${cleanPrefix}/${cleanEndpoint}`
+      : cleanPrefix;
     return `${config.baseURL}${path}/${rawToken}`;
   }
 
@@ -79,7 +81,11 @@ export class AuthTokenEmailUseCase {
       },
     });
 
-    const url = this.buildUrl(tokenConfig.routePrefix, tokenConfig.endpoint, token);
+    const url = this.buildUrl(
+      tokenConfig.routePrefix,
+      tokenConfig.endpoint,
+      token,
+    );
     const emailService = new Email(user, url);
 
     try {

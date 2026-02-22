@@ -1,7 +1,7 @@
 import { prisma } from "../../lib/prisma";
 import AppError from "../../common/utils/appError";
 import { ProductFeatures } from "./product.features";
-import { getConfig } from "../../config/config";
+import { getConfig } from "../../config/env";
 import { CreateProductInput, UpdateProductInput } from "./product.validator";
 
 const config = getConfig();

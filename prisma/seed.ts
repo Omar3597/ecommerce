@@ -134,6 +134,23 @@ async function seedReviews(
   });
 }
 
+async function seedAddresses(count: number, users: Array<{ id: string }>) {
+  await prisma.address.createMany({
+    data: Array.from({ length: count }, () => {
+      const randomUser = users[Math.floor(Math.random() * users.length)];
+
+      return {
+        fullName: faker.person.fullName(),
+        phone: faker.phone.number(),
+        city: faker.location.city(),
+        street: faker.location.streetAddress(),
+        building: Math.random() < 0.5 ? faker.location.buildingNumber() : null,
+        userId: randomUser.id,
+      };
+    }),
+  });
+}
+
 async function updateProductRatings() {
   const productRatings = await prisma.review.groupBy({
     by: ["productId"],
@@ -158,13 +175,14 @@ async function clearDB() {
   await prisma.review.deleteMany();
   await prisma.product.deleteMany();
   await prisma.category.deleteMany();
+  await prisma.address.deleteMany();
   await prisma.user.deleteMany();
 }
 
 async function seedDevData() {
   // --------------------------------------------- //
   const usersCount = 30;
-  const categoriesCount = 6;
+  const addressesCount = 100;
   const productsCount = 250;
   const reviewsCount = 3000;
   // --------------------------------------------- //
@@ -173,6 +191,9 @@ async function seedDevData() {
 
   console.log("Seeding users...");
   const users = await seedUsers(usersCount);
+
+  console.log("Seeding addresses...");
+  await seedAddresses(addressesCount, users);
 
   console.log("Seeding categories...");
   const categories = await seedCategories();

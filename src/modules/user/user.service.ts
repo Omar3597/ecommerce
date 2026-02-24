@@ -57,16 +57,14 @@ export class UserService {
   }
 
   async requestEmailChange(user: User, data: requestEmailChangeInput) {
-    const newEmail = data.email.trim().toLowerCase();
-
-    if (newEmail === user.email) {
+    if (data.email === user.email) {
       throw new AppError(400, "New email must be different from current email");
     }
 
     const existingUser = await prisma.user.findFirst({
       where: {
         id: { not: user.id },
-        OR: [{ email: newEmail }, { pendingEmail: newEmail }],
+        OR: [{ email: data.email }, { pendingEmail: data.email }],
       },
       select: { id: true },
     });
@@ -77,7 +75,7 @@ export class UserService {
 
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
-      data: { pendingEmail: newEmail },
+      data: { pendingEmail: data.email },
     });
 
     await prisma.shortToken.deleteMany({
@@ -85,8 +83,8 @@ export class UserService {
     });
 
     new AuthTokenEmailUseCase(prisma)
-      .send({ ...updatedUser, email: newEmail }, EmailTokenType.EMAIL_CHANGE)
-      .catch((err) => console.error(`somthing went wrong ${err}`));
+      .send({ ...updatedUser, email: data.email }, EmailTokenType.EMAIL_CHANGE)
+      .catch((err) => console.error(`somthing went wrong: ${err}`));
   }
 
   async verifyEmailChange(user: User, data: verifyEmailChangeInput) {

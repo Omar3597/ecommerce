@@ -10,17 +10,17 @@ export const getCartDto = (cart: any) => {
     items: cart.items.map((item: any) => {
       const product = item.product;
 
-      const isAvailable = !product.isHidden && product.stock > 0;
-      const maxAllowedQuantity = Math.min(
-        product.stock,
-        config.maxCartQuantity,
-      );
+      const status =
+        !product.isHidden && product.stock > 0 ? "in_stock" : "out_of_stock";
+      const maxQuantity = Math.min(product.stock, config.maxCartQuantity);
 
       return {
         id: item.id,
         quantity: item.quantity,
-        isAvailable,
-        maxAllowedQuantity,
+        availability: {
+          status,
+          maxQuantity,
+        },
         product: {
           id: product.id,
           name: product.name,

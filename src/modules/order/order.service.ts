@@ -32,7 +32,59 @@ type AddressForSnapshot = {
   building: string | null;
 };
 
+const orderWithSnapshotsSelect = {
+  id: true,
+  status: true,
+  subtotal: true,
+  shippingFee: true,
+  total: true,
+  createdAt: true,
+  updatedAt: true,
+  addressSnapshot: {
+    select: {
+      fullName: true,
+      phone: true,
+      city: true,
+      street: true,
+      building: true,
+    },
+  },
+  items: {
+    select: {
+      id: true,
+      productId: true,
+      quantity: true,
+      priceSnapshot: true,
+      nameSnapshot: true,
+    },
+    orderBy: { id: "asc" },
+  },
+} as const;
+
 export class orderService {
+  async getAllOrders(userId: string) {
+    const orders = await prisma.order.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      select: orderWithSnapshotsSelect,
+    });
+
+    return orders;
+  }
+
+  async getOrderById(userId: string, orderId: string) {
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, userId },
+      select: orderWithSnapshotsSelect,
+    });
+
+    if (!order) {
+      throw new AppError(404, "Order not found");
+    }
+
+    return order;
+  }
+
   async createOrderFromCart(userId: string, addressId: string) {
     return await prisma.$transaction(async (tx) => {
       const cart = await this.loadCart(tx, userId);

@@ -10,6 +10,11 @@ const controller = new OrderController(service);
 
 router.use(protect);
 
-router.route("/").post(controller.createOrderFromCart);
+router
+  .route("/")
+  .get(controller.getAllOrders)
+  .post(controller.createOrderFromCart);
+
+router.route("/:orderId").get(controller.getOrderById);
 
 export default router;

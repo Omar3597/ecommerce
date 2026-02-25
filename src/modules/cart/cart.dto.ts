@@ -32,14 +32,15 @@ export const getCartDto = (cart: any) => {
 };
 
 export const updateCartItemDto = (data: any) => {
-  const isAvailable = !data.isHidden && data.stock > 0;
+  const status = !data.isHidden && data.stock > 0 ? "in_stock" : "out_of_stock";
+  const maxQuantity = Math.min(data.stock, config.maxCartQuantity);
 
   return {
     id: data.id,
     quantity: data.quantity,
-    isAvailable,
-    maxAllowedQuantity: isAvailable
-      ? Math.min(data.stock, config.maxCartQuantity)
-      : 0,
+    availability: {
+      status,
+      maxQuantity,
+    },
   };
 };

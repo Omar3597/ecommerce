@@ -12,35 +12,42 @@ const connectionString = `${config.dbUrl}`;
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
+async function createManager() {
+  const managerPass = await bcrypt.hash("manager@1234", 12);
+  await prisma.user.create({
+    data: {
+      name: "manager",
+      email: "manager@example.com",
+      password: managerPass,
+      role: "MANAGER",
+      isVerified: true,
+    },
+  });
+}
+
 async function seedUsers(minUsersNeeded: number) {
-  let users = await prisma.user.findMany({
-    select: { id: true },
+  await createManager();
+
+  const password = await bcrypt.hash("Test@1234", 12);
+
+  await prisma.user.createMany({
+    data: Array.from({ length: minUsersNeeded }, () => {
+      const firstName = faker.person.firstName();
+      const lastName = faker.person.lastName();
+
+      return {
+        name: `${firstName} ${lastName}`,
+        email: faker.internet.email({ firstName, lastName }).toLowerCase(),
+        password,
+        isVerified: true,
+      };
+    }),
+    skipDuplicates: true,
   });
 
-  if (users.length < minUsersNeeded) {
-    const usersToCreate = minUsersNeeded - users.length;
-
-    const password = await bcrypt.hash("Test@1234", 12);
-
-    await prisma.user.createMany({
-      data: Array.from({ length: usersToCreate }, () => {
-        const firstName = faker.person.firstName();
-        const lastName = faker.person.lastName();
-
-        return {
-          name: `${firstName} ${lastName}`,
-          email: faker.internet.email({ firstName, lastName }).toLowerCase(),
-          password,
-          isVerified: true,
-        };
-      }),
-      skipDuplicates: true,
-    });
-
-    users = await prisma.user.findMany({
-      select: { id: true },
-    });
-  }
+  const users = await prisma.user.findMany({
+    select: { id: true },
+  });
 
   return users;
 }

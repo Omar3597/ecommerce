@@ -59,7 +59,7 @@ model Product {
   name        String  @db.VarChar(100)
   description String? @db.VarChar(1500)
   summary     String  @db.VarChar(200)
-  price       Decimal @db.Decimal(10, 2)
+  price       Int
   stock       Int     @default(1)
   isHidden    Boolean @default(false)
   ratingAvg   Float   @default(0)
@@ -137,11 +137,11 @@ model Order {
 }
 
 model OrderItem {
-  id            String  @id @default(uuid())
+  id            String @id @default(uuid())
   quantity      Int
   // snapshot fields used by order service
-  priceSnapshot Decimal @db.Decimal(10, 2)
-  nameSnapshot  String  @db.VarChar(100)
+  priceSnapshot Int
+  nameSnapshot  String @db.VarChar(100)
   orderId       String
   productId     String
 

@@ -25,27 +25,16 @@ const descriptionSchema = z
   .max(1500, "Description must be at most 1500 characters");
 
 const priceSchema = z
-  .union([
-    z.number("Price must be a number"),
-    z.string("Price must be a string"),
-  ])
-  .transform((value) =>
-    typeof value === "number" ? String(value) : value.trim(),
-  )
-  .refine((value) => /^([1-9]\d{0,7}|0)(\.\d{1,2})?$/.test(value), {
-    message:
-      "Price must be a valid decimal number with up to 8 integer digits and 2 decimal places",
-  })
-  .transform((value) => Number(value))
-  .refine((value) => Number.isFinite(value) && value > 0, {
-    message: "Price must be greater than 0",
-  });
+  .number("Price is required")
+  .int("Price must be an integer amount in cents")
+  .positive("Price must be greater than 0 cents")
+  .max(999_999, "Price is too large");
 
 const stockSchema = z
   .number("Stock is required")
   .int("Stock must be an integer")
   .min(0, "Stock must be greater than or equal to 0")
-  .max(1000000, "Stock is too large");
+  .max(99_999, "Stock is too large");
 
 export const createProductSchema = z.object({
   body: z

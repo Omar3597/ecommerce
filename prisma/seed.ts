@@ -86,7 +86,7 @@ async function seedProducts(count: number, categories: Array<{ id: string }>) {
         summary: description.slice(0, 200),
         description,
         stock: faker.number.int({ min: 10, max: 200 }),
-        price: parseFloat(faker.commerce.price({ min: 5, max: 1500, dec: 2 })),
+        price: faker.number.int({ min: 500, max: 999_999 }),
         categoryId: randomCategory.id,
         isHidden: Math.random() < 0.1,
       };

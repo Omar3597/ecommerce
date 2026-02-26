@@ -118,14 +118,16 @@ model CartItem {
 }
 
 model Order {
-  id          String      @id @default(uuid())
-  subtotal    Int
-  shippingFee Int
-  total       Int
-  status      OrderStatus @default(PENDING)
-  userId      String
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id            String      @id @default(uuid())
+  subtotal      Int
+  shippingFee   Int
+  total         Int
+  status        OrderStatus @default(PENDING)
+  expiresAt     DateTime
+  transactionId String?     @unique
+  userId        String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   //relations
   user            User                  @relation(fields: [userId], references: [id])

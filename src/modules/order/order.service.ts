@@ -93,14 +93,18 @@ export class orderService {
       const validItems = this.validateCartItems(cart.items);
 
       const { subtotal, shippingFee, total } = this.calculateTotals(validItems);
-      const order = await this.createOrderWithAddressSnapshot(
+
+      const orderExpiresAt = new Date(Date.now() + 2 * 60 * 1000);
+
+      const order = await this.createOrderWithAddressSnapshot({
         tx,
         userId,
         address,
         subtotal,
         shippingFee,
         total,
-      );
+        orderExpiresAt,
+      });
 
       await this.createOrderItems(tx, order.id, validItems);
       await this.decrementStockOrThrow(tx, validItems);
@@ -193,14 +197,23 @@ export class orderService {
     return { subtotal, shippingFee, total };
   }
 
-  private async createOrderWithAddressSnapshot(
-    tx: any,
-    userId: string,
-    address: AddressForSnapshot,
-    subtotal: number,
-    shippingFee: number,
-    total: number,
-  ) {
+  private async createOrderWithAddressSnapshot({
+    tx,
+    userId,
+    address,
+    subtotal,
+    shippingFee,
+    total,
+    orderExpiresAt,
+  }: {
+    tx: any;
+    userId: string;
+    address: AddressForSnapshot;
+    subtotal: number;
+    shippingFee: number;
+    total: number;
+    orderExpiresAt: Date;
+  }) {
     return await tx.order.create({
       data: {
         userId,
@@ -217,6 +230,7 @@ export class orderService {
             building: address.building,
           },
         },
+        expiresAt: orderExpiresAt,
       },
       select: { id: true, status: true, total: true, createdAt: true },
     });

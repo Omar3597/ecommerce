@@ -1,5 +1,8 @@
 import { getConfig } from "./config/env";
 import app from "./app";
+import { initCronJobs } from "./common/jobs/cron";
+
+initCronJobs();
 
 process.on("uncaughtException", (err: Error) => {
   console.error("UNCAUGHT EXCEPTION! Shutting down...");

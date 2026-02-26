@@ -11,6 +11,10 @@ interface IConfig {
   mailPass: string;
   maxCartQuantity: number;
   dbUrl: string;
+  stripeSecret: string;
+  stripeWebhookSecret: string;
+  successUrl: string;
+  cancelUrl: string;
 }
 
 export const getConfig = (): IConfig => {
@@ -24,6 +28,10 @@ export const getConfig = (): IConfig => {
     MAIL_PASS,
     MAX_CART_QUANTITY,
     DATABASE_URL,
+    STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET,
+    SUCCESS_URL,
+    CANCEL_URL,
   } = process.env;
 
   if (
@@ -35,7 +43,11 @@ export const getConfig = (): IConfig => {
     !MAIL_USER ||
     !MAIL_PASS ||
     !MAX_CART_QUANTITY ||
-    !DATABASE_URL
+    !DATABASE_URL ||
+    !STRIPE_SECRET_KEY ||
+    !STRIPE_WEBHOOK_SECRET ||
+    !SUCCESS_URL ||
+    !CANCEL_URL
   ) {
     throw new Error("Missing required environment variables");
   }
@@ -58,5 +70,9 @@ export const getConfig = (): IConfig => {
     mailPass: MAIL_PASS,
     maxCartQuantity: Number(MAX_CART_QUANTITY),
     dbUrl: DATABASE_URL,
+    stripeSecret: STRIPE_SECRET_KEY,
+    stripeWebhookSecret: STRIPE_WEBHOOK_SECRET,
+    successUrl: SUCCESS_URL,
+    cancelUrl: CANCEL_URL,
   };
 };

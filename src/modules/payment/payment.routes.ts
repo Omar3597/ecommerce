@@ -9,4 +9,6 @@ const paymentController = new PaymentController(paymentService);
 
 router.post("/", paymentController.createPaymentSession);
 
+export const paymentWebhookHandler = paymentController.handleStripeWebhook;
+
 export default router;

@@ -30,6 +30,31 @@ export class PaymentService {
     return session.id;
   }
 
+  constructWebhookEvent(payload: Buffer, signature: string) {
+    try {
+      return stripe.webhooks.constructEvent(
+        payload,
+        signature,
+        config.stripeWebhookSecret,
+      );
+    } catch {
+      throw new AppError(400, "Invalid Stripe webhook signature");
+    }
+  }
+
+  async handleWebhookEvent(event: Stripe.Event) {
+    switch (event.type) {
+      case "checkout.session.completed":
+      case "checkout.session.async_payment_succeeded": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await this.markOrderAsPaid(session);
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
   private async getPendingOrderOrThrow(userId: string, orderId: string) {
     const order = await prisma.order.findFirst({
       where: { id: orderId, userId },
@@ -136,6 +161,35 @@ export class PaymentService {
     await prisma.order.update({
       where: { id: orderId },
       data: { transactionId },
+    });
+  }
+
+  private async markOrderAsPaid(session: Stripe.Checkout.Session) {
+    if (session.payment_status !== "paid") {
+      return;
+    }
+
+    const orderIdFromMeta = session.metadata?.orderId;
+    const orderId =
+      typeof orderIdFromMeta === "string" && orderIdFromMeta.length > 0
+        ? orderIdFromMeta
+        : null;
+
+    const where: Record<string, string> = {
+      status: "PENDING",
+      transactionId: session.id,
+    };
+
+    if (orderId) {
+      where.id = orderId;
+    }
+
+    await prisma.order.updateMany({
+      where,
+      data: {
+        status: "PAID",
+        transactionId: session.id,
+      },
     });
   }
 }

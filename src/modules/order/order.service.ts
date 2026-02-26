@@ -94,7 +94,7 @@ export class orderService {
 
       const { subtotal, shippingFee, total } = this.calculateTotals(validItems);
 
-      const orderExpiresAt = new Date(Date.now() + 2 * 60 * 1000);
+      const orderExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
       const order = await this.createOrderWithAddressSnapshot({
         tx,

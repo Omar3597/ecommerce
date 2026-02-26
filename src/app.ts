@@ -11,6 +11,7 @@ import cartRouter from "./modules/cart/cart.routes";
 import orderRouter from "./modules/order/order.routes";
 import adminRouter from "./modules/admin/admin.routes";
 import { protect } from "./common/middlewares/protect";
+import { paymentWebhookHandler } from "./modules/payment/payment.routes";
 
 const app = express();
 
@@ -22,6 +23,12 @@ app.use(
 );
 
 app.use(cookieParser());
+
+app.post(
+  "/api/v1/payments/webhook",
+  express.raw({ type: "application/json" }),
+  paymentWebhookHandler,
+);
 
 app.use(express.json());
 

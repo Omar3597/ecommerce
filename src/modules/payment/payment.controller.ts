@@ -27,4 +27,27 @@ export class PaymentController {
       });
     },
   );
+
+  public handleStripeWebhook = catchAsync(
+    async (req: Request, res: Response) => {
+      const signature = req.headers["stripe-signature"];
+
+      if (typeof signature !== "string") {
+        throw new Error("Missing stripe-signature header");
+      }
+
+      if (!Buffer.isBuffer(req.body)) {
+        throw new Error("Invalid webhook payload");
+      }
+
+      const event = this.paymentService.constructWebhookEvent(
+        req.body,
+        signature,
+      );
+
+      await this.paymentService.handleWebhookEvent(event);
+
+      res.status(200).json({ received: true });
+    },
+  );
 }

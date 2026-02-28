@@ -80,10 +80,27 @@ export class ReviewController {
       reviewId: validatedData.params.reviewId,
       actor: {
         id: req.user.id,
-        role: req.user.role
+        role: req.user.role,
       },
     });
 
     res.status(204).send();
   });
+
+  public getUserReviewsOnProducts = catchAsync(
+    async (req: Request, res: Response) => {
+      assertAuth(req);
+
+      const reviews = await this.reviewService.getUserReviewsOnProducts(
+        req.user.id,
+        req.query,
+      );
+
+      res.status(200).json({
+        status: "success",
+        results: reviews.length,
+        data: { reviews },
+      });
+    },
+  );
 }

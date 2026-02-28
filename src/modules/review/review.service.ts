@@ -94,6 +94,38 @@ export class ReviewService {
     });
   }
 
+  async getUserReviewsOnProducts(userId: string, query: Record<string, any>) {
+    const qb = new QueryBuilder(query, 10).sort(REVIEW_SORT_WHITELIST).build();
+    const { orderBy, take, skip } = qb;
+
+    return prisma.review.findMany({
+      where: {
+        userId,
+        product: {
+          isHidden: false,
+        },
+      },
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+        updatedAt: true,
+        product: {
+          select: {
+            id: true,
+            name: true,
+            summary: true,
+            price: true,
+          },
+        },
+      },
+      take,
+      skip,
+      orderBy,
+    });
+  }
+
   async updateReview({
     reviewId,
     actor,
@@ -104,7 +136,10 @@ export class ReviewService {
     data: UpdateReviewInput;
   }) {
     return prisma.$transaction(async (tx) => {
-      const review = await this.getReviewWithVisibleProductOrThrow(reviewId, tx);
+      const review = await this.getReviewWithVisibleProductOrThrow(
+        reviewId,
+        tx,
+      );
       ReviewPolicy.assertCanUpdate(actor, review);
 
       const updatedReview = await tx.review.update({
@@ -120,7 +155,10 @@ export class ReviewService {
 
   async deleteReview({ reviewId, actor }: { reviewId: string; actor: Actor }) {
     await prisma.$transaction(async (tx) => {
-      const review = await this.getReviewWithVisibleProductOrThrow(reviewId, tx);
+      const review = await this.getReviewWithVisibleProductOrThrow(
+        reviewId,
+        tx,
+      );
       ReviewPolicy.assertCanDelete(actor, review);
 
       await tx.review.delete({

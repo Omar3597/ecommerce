@@ -9,8 +9,6 @@ const router = Router();
 const service = new orderService();
 const controller = new OrderController(service);
 
-router.use(protect);
-
 router
   .route("/")
   .get(controller.getAllOrders)

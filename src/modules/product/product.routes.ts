@@ -12,6 +12,4 @@ router.get("/", productController.getAllProducts);
 
 router.get("/:productId", productController.getOneProduct);
 
-router.use("/:productId/reviews", reviewRouter);
-
 export default router;

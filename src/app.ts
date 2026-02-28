@@ -11,6 +11,8 @@ import cartRouter from "./modules/cart/cart.routes";
 import orderRouter from "./modules/order/order.routes";
 import reviewRouter from "./modules/review/review.routes";
 import adminRouter from "./modules/admin/admin.routes";
+import addressRouter from "./modules/address/address.routes";
+import productReviewRouter from "./modules/review/productReviews.routes";
 import { protect } from "./common/middlewares/protect";
 import { paymentWebhookHandler } from "./modules/payment/payment.routes";
 
@@ -44,9 +46,12 @@ if (env == "development") {
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/products", productRouter);
 app.use("/api/v1/cart", cartRouter);
-app.use("/api/v1/orders", orderRouter);
-app.use("/api/v1/reviews", reviewRouter);
+app.use("/api/v1/orders", protect, orderRouter);
+app.use("/api/v1/reviews", protect, reviewRouter);
 app.use("/api/v1/admin", protect, adminRouter);
+
+app.use("/api/v1/users/me/address", protect, addressRouter);
+app.use("/api/v1/products/:productId/reviews", productReviewRouter);
 
 app.use("*", (req, res, next) => {
   res.status(404).json({

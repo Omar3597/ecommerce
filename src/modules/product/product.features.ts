@@ -62,7 +62,7 @@ export class ProductFeatures extends QueryBuilder {
   };
 
   constructor(query: QueryParams) {
-    super(query);
+    super(query, 40);
     this.sort(PRODUCT_SORT_WHITELIST);
   }
 

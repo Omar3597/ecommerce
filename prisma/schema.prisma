@@ -62,7 +62,7 @@ model Product {
   price       Int
   stock       Int     @default(1)
   isHidden    Boolean @default(false)
-  ratingAvg   Float   @default(0)
+  ratingAvg   Decimal @default(0) @db.Decimal(10, 2)
   ratingCount Int     @default(0)
 
   soldQuantity Int      @default(0)

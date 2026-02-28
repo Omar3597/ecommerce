@@ -12,14 +12,14 @@ export class QueryBuilder {
   private page: number;
   private limit: number;
 
-  constructor(query: QueryParams) {
+  constructor(query: QueryParams, maxPageSize: number) {
     this.query = query;
 
     this.page = Number(query.page) > 0 ? Number(query.page) : 1;
 
     const parsedLimit = Number(query.limit);
     this.limit =
-      Number.isNaN(parsedLimit) || parsedLimit <= 0 || parsedLimit > 60
+      Number.isNaN(parsedLimit) || parsedLimit <= 0 || parsedLimit > maxPageSize
         ? 10
         : parsedLimit;
 

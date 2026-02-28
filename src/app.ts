@@ -9,6 +9,7 @@ import userRouter from "./modules/user/user.routes";
 import productRouter from "./modules/product/product.routes";
 import cartRouter from "./modules/cart/cart.routes";
 import orderRouter from "./modules/order/order.routes";
+import reviewRouter from "./modules/review/review.routes";
 import adminRouter from "./modules/admin/admin.routes";
 import { protect } from "./common/middlewares/protect";
 import { paymentWebhookHandler } from "./modules/payment/payment.routes";
@@ -44,6 +45,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/products", productRouter);
 app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/orders", orderRouter);
+app.use("/api/v1/reviews", reviewRouter);
 app.use("/api/v1/admin", protect, adminRouter);
 
 app.use("*", (req, res, next) => {

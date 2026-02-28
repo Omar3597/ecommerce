@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { ProductController } from "./product.controller";
 import { ProductService } from "./product.service";
-import { protect } from "../../common/middlewares/protect";
+import reviewRouter from "../review/review.routes";
 
 const router = Router();
 
@@ -9,6 +9,9 @@ const productService = new ProductService();
 const productController = new ProductController(productService);
 
 router.get("/", productController.getAllProducts);
-router.get("/:productId", protect, productController.getOneProduct);
+
+router.get("/:productId", productController.getOneProduct);
+
+router.use("/:productId/reviews", reviewRouter);
 
 export default router;

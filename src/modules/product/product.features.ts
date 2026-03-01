@@ -66,7 +66,7 @@ export class ProductFeatures extends QueryBuilder {
     this.sort(PRODUCT_SORT_WHITELIST);
   }
 
-  filter() {
+  filter(includeHidden = false) {
     const queryObj = { ...this.query };
     const excludedFields = ["page", "sort", "limit", "fields"];
     excludedFields.forEach((field) => delete queryObj[field]);
@@ -102,7 +102,9 @@ export class ProductFeatures extends QueryBuilder {
       this.setFieldFilter(rawKey, undefined, rawValue);
     });
 
-    this.where.isHidden = false;
+    if (!includeHidden) {
+      this.where.isHidden = false;
+    }
     return this;
   }
 

@@ -32,6 +32,18 @@ export class ProductController {
     });
   });
 
+  public getAllProductsAdmin = catchAsync(
+    async (req: Request, res: Response) => {
+      const products = await this.productService.getAllProducts(req.query, true);
+
+      res.status(200).json({
+        status: "success",
+        results: products.length,
+        data: { products },
+      });
+    },
+  );
+
   public updateProduct = catchAsync(async (req: Request, res: Response) => {
     const validatedData = updateProductSchema.parse(req);
     const { productId } = validatedData.params;
@@ -61,6 +73,18 @@ export class ProductController {
     const { productId } = validatedData.params;
 
     const product = await this.productService.getProductById(productId);
+
+    res.status(200).json({
+      status: "success",
+      data: { product },
+    });
+  });
+
+  public getOneProductAdmin = catchAsync(async (req: Request, res: Response) => {
+    const validatedData = getProductSchema.parse(req);
+    const { productId } = validatedData.params;
+
+    const product = await this.productService.getProductById(productId, true);
 
     res.status(200).json({
       status: "success",

@@ -8,6 +8,9 @@ const router = express.Router({ mergeParams: true });
 const productService = new ProductService();
 const productController = new ProductController(productService);
 
+router.get("/", authorize("product", "read"), productController.getAllProductsAdmin);
+router.get("/:productId", authorize("product", "read"), productController.getOneProductAdmin);
+
 router.post(
   "/",
   authorize("product", "create"),

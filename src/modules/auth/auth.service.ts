@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
-import AppError from "../../../common/utils/appError";
+import AppError from "../../common/utils/appError";
 import { SignupInput, LoginInput, forgotPasswordInput } from "./auth.validator";
-import { prisma } from "../../../lib/prisma";
+import { prisma } from "../../lib/prisma";
 import {
   generateAccessToken,
   generateRefreshToken,

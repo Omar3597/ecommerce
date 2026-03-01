@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { AuthService } from "./auth.service";
-import { catchAsync } from "../../../common/middlewares/catchAsync";
+import { catchAsync } from "../../common/middlewares/catchAsync";
 import {
   signupSchema,
   loginSchema,
@@ -9,7 +9,7 @@ import {
   verifyEmailSchema,
 } from "./auth.validator";
 import { PublicUserDto } from "./auth.dto";
-import { assertAuth } from "../../../common/guards/assert-auth";
+import { assertAuth } from "../../common/guards/assert-auth";
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

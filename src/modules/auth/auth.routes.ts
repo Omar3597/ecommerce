@@ -1,7 +1,7 @@
 import express, { Router } from "express";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
-import { protect } from "../../../common/middlewares/protect";
+import { protect } from "../../common/middlewares/protect";
 
 const router = express.Router({ mergeParams: true });
 

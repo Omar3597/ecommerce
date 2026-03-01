@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { passwordSchema } from "./auth/auth.validator";
+import { passwordSchema } from "../auth/auth.validator";
 
 const comparePasswords = (data: any, ctx: z.RefinementCtx) => {
   if (data.currentPassword === data.newPassword) {

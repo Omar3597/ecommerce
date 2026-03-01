@@ -1,8 +1,8 @@
 import crypto from "crypto";
-import { User, PrismaClient } from "../../../../generated/prisma/client";
-import Email from "../../../common/utils/email";
-import AppError from "../../../common/utils/appError";
-import { getConfig } from "../../../config/env";
+import { User, PrismaClient } from "../../../generated/prisma/client";
+import Email from "../../common/utils/email";
+import AppError from "../../common/utils/appError";
+import { getConfig } from "../../config/env";
 
 const config = getConfig();
 
@@ -23,19 +23,19 @@ type TokenEmailConfig = {
 const tokenEmailConfig: Record<EmailTokenType, TokenEmailConfig> = {
   [EmailTokenType.PASSWORD_RESET]: {
     endpoint: "reset-password",
-    routePrefix: "/users/auth",
+    routePrefix: "/auth",
     expiresInMinutes: 10,
     sendEmail: (email) => email.sendPasswordReset(),
   },
   [EmailTokenType.VERIFICATION]: {
     endpoint: "verify-email",
-    routePrefix: "/users/auth",
+    routePrefix: "/auth",
     expiresInMinutes: 10,
     sendEmail: (email) => email.sendVerificationEmail(),
   },
   [EmailTokenType.REACTIVATION]: {
     endpoint: "reactivate",
-    routePrefix: "/users/auth",
+    routePrefix: "/auth",
     expiresInMinutes: 10,
     sendEmail: (email) => email.sendReactivationEmail(),
   },

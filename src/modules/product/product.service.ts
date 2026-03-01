@@ -22,6 +22,15 @@ const productAdminSelect = {
 } as const;
 
 export class ProductService {
+  private toNumber(value: unknown): number {
+    if (typeof value === "number") return value;
+    if (typeof value === "object" && value !== null && "toNumber" in value) {
+      return (value as { toNumber: () => number }).toNumber();
+    }
+
+    return Number(value);
+  }
+
   async createProduct(data: CreateProductInput) {
     const category = await prisma.category.findUnique({
       where: { id: data.categoryId },
@@ -46,13 +55,19 @@ export class ProductService {
     });
   }
 
-  async getAllProducts(query: Record<string, any>) {
-    const pf = new ProductFeatures(query).filter().limitFields();
+  async getAllProducts(query: Record<string, any>, includeHidden = false) {
+    const pf = new ProductFeatures(query).filter(includeHidden).limitFields();
     const { where, select, orderBy, skip, take } = pf.build();
 
-    if (query.category) where.category = { slug: query.category };
+    if (!includeHidden) {
+      where.category = {
+        ...(query.category ? { slug: query.category } : {}),
+        isHidden: false,
+      };
+    } else if (query.category) {
+      where.category = { slug: query.category };
+    }
 
-    console.log(where);
     const products = await prisma.product.findMany({
       where,
       select: Object.keys(select || {}).length ? select : {},
@@ -61,10 +76,18 @@ export class ProductService {
       take,
     });
 
-    products.forEach(
-      (product) =>
-        (product.stock = Math.min(product.stock, config.maxCartQuantity)),
-    );
+    if (!includeHidden) {
+      products.forEach(
+        (product) =>
+          (product.stock = Math.min(product.stock, config.maxCartQuantity)),
+      );
+    }
+
+    products.forEach((product: Record<string, any>) => {
+      if (product.ratingAvg !== undefined) {
+        product.ratingAvg = this.toNumber(product.ratingAvg);
+      }
+    });
 
     return products;
   }
@@ -122,9 +145,12 @@ export class ProductService {
     }
   }
 
-  async getProductById(productId: string) {
-    const product = await prisma.product.findUnique({
-      where: { id: productId, isHidden: false },
+  async getProductById(productId: string, includeHidden = false) {
+    const product = await prisma.product.findFirst({
+      where: {
+        id: productId,
+        ...(includeHidden ? {} : { isHidden: false, category: { isHidden: false } }),
+      },
       select: {
         id: true,
         name: true,
@@ -153,8 +179,17 @@ export class ProductService {
       throw new AppError(404, "Product is not found");
     }
 
-    product.stock = Math.min(product.stock, config.maxCartQuantity);
+    if (!includeHidden) {
+      product.stock = Math.min(product.stock, config.maxCartQuantity);
+    }
 
-    return product;
+    return {
+      ...product,
+      ratingAvg: this.toNumber(product.ratingAvg),
+      reviews: product.reviews.map((review) => ({
+        ...review,
+        rating: this.toNumber(review.rating),
+      })),
+    };
   }
 }

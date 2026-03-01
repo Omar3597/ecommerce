@@ -9,7 +9,7 @@ import {
 } from "./user.validator";
 import { User } from "../../../generated/prisma/client";
 import crypto from "crypto";
-import { AuthTokenEmailUseCase, EmailTokenType } from "./auth/auth.usecase";
+import { AuthTokenEmailUseCase, EmailTokenType } from "../auth/auth.usecase";
 
 const userSelect = {
   id: true,

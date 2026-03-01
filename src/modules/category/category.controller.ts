@@ -1,0 +1,94 @@
+import { Request, Response } from "express";
+import { CategoryService } from "./category.service";
+import { catchAsync } from "../../common/middlewares/catchAsync";
+import {
+  createCategorySchema,
+  deleteCategorySchema,
+  getCategorySchema,
+  updateCategorySchema,
+} from "./category.validator";
+
+export class CategoryController {
+  constructor(private readonly categoryService: CategoryService) {}
+
+  public createCategory = catchAsync(async (req: Request, res: Response) => {
+    const validatedData = createCategorySchema.parse(req);
+
+    const category = await this.categoryService.createCategory(validatedData.body);
+
+    res.status(201).json({
+      status: "success",
+      data: { category },
+    });
+  });
+
+  public getAllCategories = catchAsync(async (_req: Request, res: Response) => {
+    const categories = await this.categoryService.getAllCategories();
+
+    res.status(200).json({
+      status: "success",
+      results: categories.length,
+      data: { categories },
+    });
+  });
+
+  public getAllCategoriesAdmin = catchAsync(
+    async (_req: Request, res: Response) => {
+      const categories = await this.categoryService.getAllCategories(true);
+
+      res.status(200).json({
+        status: "success",
+        results: categories.length,
+        data: { categories },
+      });
+    },
+  );
+
+  public getOneCategory = catchAsync(async (req: Request, res: Response) => {
+    const validatedData = getCategorySchema.parse(req);
+    const { categoryId } = validatedData.params;
+
+    const category = await this.categoryService.getCategoryById(categoryId);
+
+    res.status(200).json({
+      status: "success",
+      data: { category },
+    });
+  });
+
+  public getOneCategoryAdmin = catchAsync(async (req: Request, res: Response) => {
+    const validatedData = getCategorySchema.parse(req);
+    const { categoryId } = validatedData.params;
+
+    const category = await this.categoryService.getCategoryById(categoryId, true);
+
+    res.status(200).json({
+      status: "success",
+      data: { category },
+    });
+  });
+
+  public updateCategory = catchAsync(async (req: Request, res: Response) => {
+    const validatedData = updateCategorySchema.parse(req);
+    const { categoryId } = validatedData.params;
+
+    const category = await this.categoryService.updateCategory(
+      categoryId,
+      validatedData.body,
+    );
+
+    res.status(200).json({
+      status: "success",
+      data: { category },
+    });
+  });
+
+  public deleteCategory = catchAsync(async (req: Request, res: Response) => {
+    const validatedData = deleteCategorySchema.parse(req);
+    const { categoryId } = validatedData.params;
+
+    await this.categoryService.deleteCategory(categoryId);
+
+    res.status(204).send();
+  });
+}

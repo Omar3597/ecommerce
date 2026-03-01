@@ -5,6 +5,7 @@ import hpp from "hpp";
 import cookieParser from "cookie-parser";
 import { errHandler } from "./common/errors/errHandler";
 import { getConfig } from "./config/env";
+import authRouter from "./modules/auth/auth.routes";
 import userRouter from "./modules/user/user.routes";
 import productRouter from "./modules/product/product.routes";
 import cartRouter from "./modules/cart/cart.routes";
@@ -15,6 +16,7 @@ import addressRouter from "./modules/address/address.routes";
 import productReviewRouter from "./modules/review/productReviews.routes";
 import { protect } from "./common/middlewares/protect";
 import { paymentWebhookHandler } from "./modules/payment/payment.routes";
+import categoryRouter from "./modules/category/category.routes";
 
 const app = express();
 
@@ -43,8 +45,10 @@ if (env == "development") {
   app.use(morgan("dev"));
 }
 
+app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/products", productRouter);
+app.use("/api/v1/categories", categoryRouter);
 app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/orders", protect, orderRouter);
 app.use("/api/v1/reviews", protect, reviewRouter);

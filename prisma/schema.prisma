@@ -70,11 +70,11 @@ model Product {
   updatedAt    DateTime @updatedAt
 
   //relations
-  category   Category    @relation(fields: [categoryId], references: [id])
+  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   cartItems  CartItem[]
-  orderItems OrderItem[]
   reviews    Review[]
   categoryId String
+  orderItems OrderItem[]
 
   @@map("products")
 }
@@ -139,20 +139,20 @@ model Order {
 }
 
 model OrderItem {
-  id            String @id @default(uuid())
-  quantity      Int
+  id                String  @id @default(uuid())
+  quantity          Int
   // snapshot fields used by order service
-  priceSnapshot Int
-  nameSnapshot  String @db.VarChar(100)
-  orderId       String
-  productId     String
+  orderId           String
+  productId         String?
+  productSnapshotId String  @unique
 
   //relations
-  order   Order   @relation(fields: [orderId], references: [id])
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order           Order                  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product?               @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productSnapshot OrderedProductSnapshot @relation(fields: [productSnapshotId], references: [id])
 
   @@index([orderId])
-  @@index([productId])
+  @@index([productSnapshotId])
   @@map("order_items")
 }
 
@@ -188,6 +188,18 @@ model OrderAddressSnapshot {
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("order_address_snapshots")
+}
+
+model OrderedProductSnapshot {
+  id         String     @id @default(uuid())
+  name       String     @db.VarChar(100)
+  summary    String     @db.VarChar(200)
+  price      Int
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  orderItems OrderItem?
+
+  @@map("ordered_product_snapshot")
 }
 
 model ShortToken {
@@ -230,7 +242,7 @@ model Review {
   productId String
 
   user    User    @relation(fields: [userId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

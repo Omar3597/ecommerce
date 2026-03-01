@@ -25,6 +25,7 @@ export const orderExpirationJob = () => {
           if (updated.count === 0) return;
 
           for (const item of order.items) {
+            if (!item.productId) continue;
             await tx.product.update({
               where: { id: item.productId },
               data: {

@@ -4,6 +4,7 @@ import { prisma } from "../../lib/prisma";
 type ProductForOrder = {
   id: string;
   name: string;
+  summary: string;
   price: number;
   stock: number;
   isHidden: boolean;
@@ -52,10 +53,15 @@ const orderWithSnapshotsSelect = {
   items: {
     select: {
       id: true,
-      productId: true,
       quantity: true,
-      priceSnapshot: true,
-      nameSnapshot: true,
+      productSnapshot: {
+        select: {
+          id: true,
+          name: true,
+          summary: true,
+          price: true,
+        },
+      },
     },
     orderBy: { id: "asc" },
   },
@@ -106,7 +112,7 @@ export class orderService {
         orderExpiresAt,
       });
 
-      await this.createOrderItems(tx, order.id, validItems);
+      await this.createOrderItemsWithProductSnapshot(tx, order.id, validItems);
       await this.decrementStockOrThrow(tx, validItems);
       await this.clearCart(tx, cart.id);
 
@@ -126,6 +132,7 @@ export class orderService {
               select: {
                 id: true,
                 name: true,
+                summary: true,
                 price: true,
                 stock: true,
                 isHidden: true,
@@ -236,18 +243,30 @@ export class orderService {
     });
   }
 
-  private async createOrderItems(
+  private async createOrderItemsWithProductSnapshot(
     tx: any,
     orderId: string,
     items: ValidCartItemForOrder[],
   ) {
+    const snapshots = await Promise.all(
+      items.map((item) =>
+        tx.orderedProductSnapshot.create({
+          data: {
+            name: item.product.name,
+            summary: item.product.summary,
+            price: item.product.price,
+          },
+          select: { id: true },
+        }),
+      ),
+    );
+
     await tx.orderItem.createMany({
-      data: items.map((item) => ({
+      data: items.map((item, index) => ({
         orderId,
+        productSnapshotId: snapshots[index].id,
         productId: item.product.id,
         quantity: item.quantity,
-        priceSnapshot: item.product.price,
-        nameSnapshot: item.product.name,
       })),
     });
   }

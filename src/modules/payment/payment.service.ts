@@ -65,10 +65,13 @@ export class PaymentService {
         items: {
           select: {
             quantity: true,
-            priceSnapshot: true,
-            nameSnapshot: true,
+            productSnapshot: {
+              select: {
+                name: true,
+                price: true,
+              },
+            },
           },
-          orderBy: { id: "asc" },
         },
       },
     });
@@ -90,16 +93,19 @@ export class PaymentService {
 
   private buildStripeLineItems(order: {
     shippingFee: number;
-    items: { quantity: number; priceSnapshot: number; nameSnapshot: string }[];
+    items: {
+      quantity: number;
+      productSnapshot: { price: number; name: string };
+    }[];
   }): Stripe.Checkout.SessionCreateParams.LineItem[] {
     const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] =
       order.items.map((item) => ({
         price_data: {
           currency: "usd",
           product_data: {
-            name: item.nameSnapshot,
+            name: item.productSnapshot.name,
           },
-          unit_amount: item.priceSnapshot,
+          unit_amount: item.productSnapshot.price,
         },
         quantity: item.quantity,
       }));

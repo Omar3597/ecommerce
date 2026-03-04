@@ -7,6 +7,14 @@ import {
   getProductSchema,
   updateProductSchema,
 } from "./product.validator";
+import {
+  toPaginatedAdminResponse,
+  toPaginatedPublicResponse,
+  toPublicProductDetails,
+} from "./product.dto";
+import { getConfig } from "../../config/env";
+
+const config = getConfig();
 
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
@@ -23,22 +31,32 @@ export class ProductController {
   });
 
   public getAllProducts = catchAsync(async (req: Request, res: Response) => {
-    const products = await this.productService.getAllProducts(req.query);
+    const result = await this.productService.getAllProducts(req.query);
+    const { pagination, products } = toPaginatedPublicResponse(
+      result,
+      config.maxCartQuantity,
+    );
 
     res.status(200).json({
       status: "success",
-      results: products.length,
+      results: result.products.length,
+      pagination,
       data: { products },
     });
   });
 
   public getAllProductsAdmin = catchAsync(
     async (req: Request, res: Response) => {
-      const products = await this.productService.getAllProducts(req.query, true);
+      const result = await this.productService.getAllProducts(
+        req.query,
+        true,
+      );
+      const { pagination, products } = toPaginatedAdminResponse(result);
 
       res.status(200).json({
         status: "success",
-        results: products.length,
+        results: result.products.length,
+        pagination,
         data: { products },
       });
     },
@@ -73,22 +91,28 @@ export class ProductController {
     const { productId } = validatedData.params;
 
     const product = await this.productService.getProductById(productId);
+    const publicProduct = toPublicProductDetails(
+      product,
+      config.maxCartQuantity,
+    );
 
     res.status(200).json({
       status: "success",
-      data: { product },
+      data: { product: publicProduct },
     });
   });
 
-  public getOneProductAdmin = catchAsync(async (req: Request, res: Response) => {
-    const validatedData = getProductSchema.parse(req);
-    const { productId } = validatedData.params;
+  public getOneProductAdmin = catchAsync(
+    async (req: Request, res: Response) => {
+      const validatedData = getProductSchema.parse(req);
+      const { productId } = validatedData.params;
 
-    const product = await this.productService.getProductById(productId, true);
+      const product = await this.productService.getProductById(productId, true);
 
-    res.status(200).json({
-      status: "success",
-      data: { product },
-    });
-  });
+      res.status(200).json({
+        status: "success",
+        data: { product },
+      });
+    },
+  );
 }

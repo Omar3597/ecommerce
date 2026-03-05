@@ -1,73 +1,28 @@
-import { prisma } from "../../lib/prisma";
 import AppError from "../../common/utils/appError";
 import { getConfig } from "../../config/env";
+import { CartRepo } from "./cart.repo";
 
 const config = getConfig();
 
 export class CartService {
-  private async getOrCreateCart(userId: string) {
-    return prisma.cart.upsert({
-      where: { userId },
-      update: {},
-      create: { userId },
-    });
-  }
+  constructor(private readonly cartRepo: CartRepo) {}
 
   async getCart(userId: string) {
-    const cart = await prisma.cart.findUnique({
-      where: { userId },
-      select: {
-        id: true,
-        items: {
-          select: {
-            id: true,
-            quantity: true,
-            product: {
-              select: {
-                id: true,
-                name: true,
-                price: true,
-                stock: true,
-                isHidden: true,
-              },
-            },
-          },
-          orderBy: { product: { name: "asc" } },
-        },
-      },
-    });
-    return cart;
+    return this.cartRepo.findCartByUserId(userId);
   }
 
   async addToCart(userId: string, productId: string) {
-    const cart = await this.getOrCreateCart(userId);
+    const cart = await this.cartRepo.getOrCreateCart(userId);
 
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
-      select: { id: true, isHidden: true, stock: true },
-    });
+    const product = await this.cartRepo.findProductForCart(productId);
     if (!product || product.isHidden || product.stock < 1)
       throw new AppError(404, "Product is not found");
 
-    return prisma.cartItem.create({
-      data: {
-        cartId: cart.id,
-        productId,
-        quantity: 1,
-      },
-    });
+    return this.cartRepo.createCartItem(cart.id, productId, 1);
   }
 
   async updateItemQuantity(userId: string, itemId: string, quantity: number) {
-    const item = await prisma.cartItem.findFirst({
-      where: { id: itemId, cart: { userId } },
-      select: {
-        id: true,
-        product: {
-          select: { stock: true, isHidden: true },
-        },
-      },
-    });
+    const item = await this.cartRepo.findCartItemForUser(userId, itemId);
 
     if (!item) throw new AppError(404, "Cart item not found");
 
@@ -87,11 +42,10 @@ export class CartService {
     if (quantity > maxAllowed)
       throw new AppError(400, "Quantity exceeds allowed limit");
 
-    const updatedItem = await prisma.cartItem.update({
-      where: { id: item.id },
-      data: { quantity },
-      select: { id: true, quantity: true },
-    });
+    const updatedItem = await this.cartRepo.updateCartItemQuantity(
+      item.id,
+      quantity,
+    );
 
     return {
       id: updatedItem.id,
@@ -102,20 +56,16 @@ export class CartService {
   }
 
   async removeItem(userId: string, itemId: string) {
-    const cart = await prisma.cart.findUnique({ where: { userId } });
+    const cart = await this.cartRepo.findCartIdByUserId(userId);
     if (!cart) return;
 
-    await prisma.cartItem.deleteMany({
-      where: { id: itemId, cartId: cart.id },
-    });
+    await this.cartRepo.deleteCartItemByCartId(itemId, cart.id);
   }
 
   async clearCart(userId: string) {
-    const cart = await prisma.cart.findUnique({ where: { userId } });
+    const cart = await this.cartRepo.findCartIdByUserId(userId);
     if (!cart) return;
 
-    await prisma.cartItem.deleteMany({
-      where: { cartId: cart.id },
-    });
+    await this.cartRepo.deleteCartItemsByCartId(cart.id);
   }
 }

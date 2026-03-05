@@ -1,12 +1,12 @@
-import { prisma } from "../../lib/prisma";
+import { Prisma } from "../../../generated/prisma/client";
 import AppError from "../../common/utils/appError";
 import { CreateReviewInput, UpdateReviewInput } from "./review.validator";
-import { QueryBuilder } from "../../common/utils/queryBuilder";
 import { Actor, ReviewPolicy } from "./review.policy";
-
-const REVIEW_SORT_WHITELIST = ["comment", "rating", "createdAt"];
+import { ReviewRepo } from "./review.repo";
 
 export class ReviewService {
+  constructor(private readonly reviewRepo: ReviewRepo = new ReviewRepo()) {}
+
   async createReview({
     productId,
     userId,
@@ -16,27 +16,13 @@ export class ReviewService {
     userId: string;
     data: CreateReviewInput;
   }) {
-    const reviewableProduct = await prisma.product.findFirst({
-      where: {
-        id: productId,
-        isHidden: false,
-        orderItems: {
-          some: {
-            order: {
-              userId,
-              status: "DELIVERED",
-            },
-          },
-        },
-      },
-      select: { id: true },
-    });
+    const reviewableProduct = await this.reviewRepo.findReviewableProduct(
+      productId,
+      userId,
+    );
 
     if (!reviewableProduct) {
-      const product = await prisma.product.findFirst({
-        where: { id: productId, isHidden: false },
-        select: { id: true },
-      });
+      const product = await this.reviewRepo.findVisibleProductById(productId);
 
       if (!product) {
         throw new AppError(404, "Product is not found");
@@ -48,9 +34,11 @@ export class ReviewService {
       );
     }
 
-    return prisma.$transaction(async (tx) => {
-      const review = await tx.review.create({
-        data: { ...data, userId, productId },
+    return this.reviewRepo.runInTransaction(async (tx) => {
+      const review = await this.reviewRepo.createReview(tx, {
+        productId,
+        userId,
+        data,
       });
 
       await this.updateProductRating(productId, tx);
@@ -60,70 +48,17 @@ export class ReviewService {
   }
 
   async getProductReviews(productId: string, query: Record<string, any>) {
-    const qb = new QueryBuilder(query, 15).sort(REVIEW_SORT_WHITELIST).build();
-
-    const { orderBy, take, skip } = qb;
-
-    const product = await prisma.product.findUnique({
-      where: { id: productId, isHidden: false },
-      select: { id: true },
-    });
+    const product = await this.reviewRepo.findVisibleProductById(productId);
 
     if (!product) {
       throw new AppError(404, "Product is not found");
     }
 
-    return prisma.review.findMany({
-      where: { productId },
-      select: {
-        id: true,
-        rating: true,
-        comment: true,
-        createdAt: true,
-        updatedAt: true,
-        user: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-      take,
-      skip,
-      orderBy,
-    });
+    return this.reviewRepo.findProductReviews(productId, query);
   }
 
   async getUserReviewsOnProducts(userId: string, query: Record<string, any>) {
-    const qb = new QueryBuilder(query, 10).sort(REVIEW_SORT_WHITELIST).build();
-    const { orderBy, take, skip } = qb;
-
-    return prisma.review.findMany({
-      where: {
-        userId,
-        product: {
-          isHidden: false,
-        },
-      },
-      select: {
-        id: true,
-        rating: true,
-        comment: true,
-        createdAt: true,
-        updatedAt: true,
-        product: {
-          select: {
-            id: true,
-            name: true,
-            summary: true,
-            price: true,
-          },
-        },
-      },
-      take,
-      skip,
-      orderBy,
-    });
+    return this.reviewRepo.findUserReviewsOnProducts(userId, query);
   }
 
   async updateReview({
@@ -135,17 +70,18 @@ export class ReviewService {
     actor: Actor;
     data: UpdateReviewInput;
   }) {
-    return prisma.$transaction(async (tx) => {
+    return this.reviewRepo.runInTransaction(async (tx) => {
       const review = await this.getReviewWithVisibleProductOrThrow(
         reviewId,
         tx,
       );
       ReviewPolicy.assertCanUpdate(actor, review);
 
-      const updatedReview = await tx.review.update({
-        where: { id: review.id },
+      const updatedReview = await this.reviewRepo.updateReview(
+        tx,
+        review.id,
         data,
-      });
+      );
 
       await this.updateProductRating(review.productId, tx);
 
@@ -154,53 +90,41 @@ export class ReviewService {
   }
 
   async deleteReview({ reviewId, actor }: { reviewId: string; actor: Actor }) {
-    await prisma.$transaction(async (tx) => {
+    await this.reviewRepo.runInTransaction(async (tx) => {
       const review = await this.getReviewWithVisibleProductOrThrow(
         reviewId,
         tx,
       );
       ReviewPolicy.assertCanDelete(actor, review);
 
-      await tx.review.delete({
-        where: { id: review.id },
-      });
+      await this.reviewRepo.deleteReview(tx, review.id);
 
       await this.updateProductRating(review.productId, tx);
     });
   }
 
-  private async updateProductRating(productId: string, tx: any) {
-    const stats = await tx.review.aggregate({
-      where: { productId },
-      _avg: { rating: true },
-      _count: { rating: true },
-    });
+  private async updateProductRating(
+    productId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const stats = await this.reviewRepo.aggregateReviewStats(tx, productId);
 
-    await tx.product.update({
-      where: { id: productId },
-      data: {
-        ratingAvg: stats._avg.rating || 0,
-        ratingCount: stats._count.rating || 0,
-      },
-    });
+    await this.reviewRepo.updateProductRating(
+      tx,
+      productId,
+      stats._avg.rating ?? 0,
+      stats._count.rating ?? 0,
+    );
   }
 
-  private async getReviewWithVisibleProductOrThrow(reviewId: string, tx: any) {
-    const review = await tx.review.findUnique({
-      where: { id: reviewId },
-      select: {
-        id: true,
-        userId: true,
-        createdAt: true,
-        productId: true,
-        product: {
-          select: {
-            id: true,
-            isHidden: true,
-          },
-        },
-      },
-    });
+  private async getReviewWithVisibleProductOrThrow(
+    reviewId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const review = await this.reviewRepo.findReviewWithProductById(
+      reviewId,
+      tx,
+    );
 
     if (!review) {
       throw new AppError(404, "Review is not found");

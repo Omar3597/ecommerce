@@ -1,14 +1,19 @@
 import { Router } from "express";
 import { ReviewController } from "./review.controller";
 import { ReviewService } from "./review.service";
-import { protect } from "../../common/middlewares/protect";
+import { ReviewRepo } from "./review.repo";
 
-const reviewService = new ReviewService();
+const reviewRepo = new ReviewRepo();
+const reviewService = new ReviewService(reviewRepo);
 const reviewController = new ReviewController(reviewService);
 
-const router = Router({ mergeParams: true });
+const router = Router();
 
-router.get("/", reviewController.getProductReviews);
-router.post("/", protect, reviewController.createReview);
+router.get("/", reviewController.getUserReviewsOnProducts);
+
+router
+  .route("/:reviewId")
+  .patch(reviewController.updateReview)
+  .delete(reviewController.deleteReview);
 
 export default router;

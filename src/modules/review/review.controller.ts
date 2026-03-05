@@ -8,6 +8,10 @@ import {
   updateReviewSchema,
   getProductReviewsSchema,
 } from "./review.validator";
+import {
+  toPaginatedProductReviewsResponse,
+  toPaginatedUserReviewsResponse,
+} from "./review.dto";
 
 export class ReviewController {
   constructor(private readonly reviewService: ReviewService) {}
@@ -16,14 +20,16 @@ export class ReviewController {
     const validatedData = getProductReviewsSchema.parse({ params: req.params });
     const { productId } = validatedData.params;
 
-    const reviews = await this.reviewService.getProductReviews(
+    const result = await this.reviewService.getProductReviews(
       productId,
       req.query,
     );
+    const { pagination, reviews } = toPaginatedProductReviewsResponse(result);
 
     res.status(200).json({
       status: "success",
-      results: reviews.length,
+      results: result.reviews.length,
+      pagination,
       data: { reviews },
     });
   });
@@ -91,14 +97,16 @@ export class ReviewController {
     async (req: Request, res: Response) => {
       assertAuth(req);
 
-      const reviews = await this.reviewService.getUserReviewsOnProducts(
+      const result = await this.reviewService.getUserReviewsOnProducts(
         req.user.id,
         req.query,
       );
+      const { pagination, reviews } = toPaginatedUserReviewsResponse(result);
 
       res.status(200).json({
         status: "success",
-        results: reviews.length,
+        results: result.reviews.length,
+        pagination,
         data: { reviews },
       });
     },

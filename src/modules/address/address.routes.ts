@@ -1,10 +1,12 @@
-import express from "express";
+import { Router } from "express";
 import { AddressService } from "./address.service";
 import { AddressController } from "./address.controller";
+import { AddressRepo } from "./address.repo";
 
-const router = express.Router();
+const router = Router();
 
-const addressService = new AddressService();
+const addressRepo = new AddressRepo();
+const addressService = new AddressService(addressRepo);
 const addressController = new AddressController(addressService);
 
 router

@@ -1,58 +1,26 @@
 import AppError from "../../common/utils/appError";
-import { prisma } from "../../lib/prisma";
 import { CreateAddressInput, UpdateAddressInput } from "./address.validator";
-
-const addressSelect = {
-  id: true,
-  fullName: true,
-  phone: true,
-  city: true,
-  street: true,
-  building: true,
-  userId: true,
-  createdAt: true,
-  updatedAt: true,
-} as const;
+import { AddressRepo } from "./address.repo";
 
 export class AddressService {
+  constructor(private readonly addressRepo: AddressRepo = new AddressRepo()) {}
+
   async createAddress(userId: string, data: CreateAddressInput) {
-    const addressesCount = await prisma.address.count({
-      where: { userId },
-    });
+    const addressesCount = await this.addressRepo.countUserAddresses(userId);
 
     if (addressesCount >= 3) {
       throw new AppError(400, "Maximum 3 addresses allowed per user");
     }
 
-    return prisma.address.create({
-      data: {
-        userId,
-        fullName: data.fullName,
-        phone: data.phone,
-        city: data.city,
-        street: data.street,
-        building: data.building,
-      },
-      select: addressSelect,
-    });
+    return this.addressRepo.createAddress(userId, data);
   }
 
   async getAllAddresses(userId: string) {
-    return prisma.address.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      select: addressSelect,
-    });
+    return this.addressRepo.findAllByUserId(userId);
   }
 
   async getAddressById(userId: string, addressId: string) {
-    const address = await prisma.address.findFirst({
-      where: {
-        id: addressId,
-        userId,
-      },
-      select: addressSelect,
-    });
+    const address = await this.addressRepo.findByIdAndUserId(addressId, userId);
 
     if (!address) {
       throw new AppError(404, "Address not found");
@@ -66,38 +34,23 @@ export class AddressService {
     addressId: string,
     data: UpdateAddressInput,
   ) {
-    const existingAddress = await prisma.address.findFirst({
-      where: {
-        id: addressId,
-        userId,
-      },
-      select: { id: true },
-    });
+    const existingAddress = await this.addressRepo.findIdByIdAndUserId(
+      addressId,
+      userId,
+    );
 
     if (!existingAddress) {
       throw new AppError(404, "Address not found");
     }
 
-    return prisma.address.update({
-      where: { id: existingAddress.id },
-      data: {
-        ...(data.fullName !== undefined && { fullName: data.fullName }),
-        ...(data.phone !== undefined && { phone: data.phone }),
-        ...(data.city !== undefined && { city: data.city }),
-        ...(data.street !== undefined && { street: data.street }),
-        ...(data.building !== undefined && { building: data.building }),
-      },
-      select: addressSelect,
-    });
+    return this.addressRepo.updateAddress(existingAddress.id, data);
   }
 
   async deleteAddress(userId: string, addressId: string) {
-    const deleted = await prisma.address.deleteMany({
-      where: {
-        id: addressId,
-        userId,
-      },
-    });
+    const deleted = await this.addressRepo.deleteByIdAndUserId(
+      addressId,
+      userId,
+    );
 
     if (deleted.count === 0) {
       throw new AppError(404, "Address not found");

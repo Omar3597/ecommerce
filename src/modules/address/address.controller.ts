@@ -8,6 +8,7 @@ import {
   getAddressSchema,
   updateAddressSchema,
 } from "./address.validator";
+import { toAddressResponse, toAddressesResponse } from "./address.dto";
 
 export class AddressController {
   constructor(private readonly addressService: AddressService) {}
@@ -21,10 +22,11 @@ export class AddressController {
       req.user.id,
       validatedData.body,
     );
+    const publicAddress = toAddressResponse(address);
 
     res.status(201).json({
       status: "success",
-      data: { address },
+      data: { address: publicAddress },
     });
   });
 
@@ -32,11 +34,12 @@ export class AddressController {
     assertAuth(req);
 
     const addresses = await this.addressService.getAllAddresses(req.user.id);
+    const publicAddresses = toAddressesResponse(addresses);
 
     res.status(200).json({
       status: "success",
-      results: addresses.length,
-      data: { addresses },
+      results: publicAddresses.length,
+      data: { addresses: publicAddresses },
     });
   });
 
@@ -49,10 +52,11 @@ export class AddressController {
       req.user.id,
       validatedData.params.addressId,
     );
+    const publicAddress = toAddressResponse(address);
 
     res.status(200).json({
       status: "success",
-      data: { address },
+      data: { address: publicAddress },
     });
   });
 
@@ -66,10 +70,11 @@ export class AddressController {
       validatedData.params.addressId,
       validatedData.body,
     );
+    const publicAddress = toAddressResponse(address);
 
     res.status(200).json({
       status: "success",
-      data: { address },
+      data: { address: publicAddress },
     });
   });
 

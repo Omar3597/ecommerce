@@ -1,5 +1,4 @@
 import bcrypt from "bcrypt";
-import { prisma } from "../../lib/prisma";
 import AppError from "../../common/utils/appError";
 import {
   requestEmailChangeInput,
@@ -9,26 +8,24 @@ import {
 } from "./user.validator";
 import { User } from "../../../generated/prisma/client";
 import crypto from "crypto";
-import { AuthTokenEmailUseCase, EmailTokenType } from "../auth/auth.usecase";
-
-const userSelect = {
-  id: true,
-  name: true,
-  email: true,
-  role: true,
-};
+import {
+  AuthEmailTokenService,
+  EmailTokenType,
+} from "../../common/services/email-token.service";
+import { UserRepo } from "./user.repo";
 
 export class UserService {
+  constructor(
+    private readonly userRepo: UserRepo,
+    private readonly authEmailTokenService: AuthEmailTokenService,
+  ) {}
+
   async updateProfile(user: User, data: updateProfileInput) {
     if (data.name === user.name) {
       throw new AppError(400, "Name is already up to date");
     }
 
-    return prisma.user.update({
-      where: { id: user.id },
-      data: { name: data.name },
-      select: userSelect,
-    });
+    return this.userRepo.updateProfile(user.id, data.name);
   }
 
   async updatePassword(user: User, data: updatePasswordInput) {
@@ -45,15 +42,10 @@ export class UserService {
 
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: user.id },
-        data: { password: hashedPassword, passwordChangedAt: new Date() },
-      }),
-      prisma.refreshToken.delete({
-        where: { userId: user.id },
-      }),
-    ]);
+    await this.userRepo.updatePasswordAndRevokeAllTokens(
+      user.id,
+      hashedPassword,
+    );
   }
 
   async requestEmailChange(user: User, data: requestEmailChangeInput) {
@@ -61,30 +53,27 @@ export class UserService {
       throw new AppError(400, "New email must be different from current email");
     }
 
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        id: { not: user.id },
-        OR: [{ email: data.email }, { pendingEmail: data.email }],
-      },
-      select: { id: true },
-    });
-
-    if (existingUser) {
+    if (await this.userRepo.isEmailTaken(data.email)) {
       throw new AppError(400, "Email already in use");
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: { pendingEmail: data.email },
-    });
+    const updatedUser = await this.userRepo.setPendingEmail(
+      user.id,
+      data.email,
+    );
 
-    await prisma.shortToken.deleteMany({
-      where: { userId: user.id, type: "EMAIL_CHANGE" },
-    });
-
-    new AuthTokenEmailUseCase(prisma)
-      .send({ ...updatedUser, email: data.email }, EmailTokenType.EMAIL_CHANGE)
-      .catch((err) => console.error(`somthing went wrong: ${err}`));
+    void this.authEmailTokenService
+      .send(
+        {
+          id: updatedUser.id,
+          email: data.email,
+          firstName: updatedUser.name.split(" ")[0] ?? updatedUser.name,
+        },
+        EmailTokenType.EMAIL_CHANGE,
+      )
+      .catch((err) =>
+        console.error("Failed to create email change token: ", err),
+      );
   }
 
   async verifyEmailChange(user: User, data: verifyEmailChangeInput) {
@@ -93,48 +82,28 @@ export class UserService {
       .update(data.token)
       .digest("hex");
 
-    const storedToken = await prisma.shortToken.findFirst({
-      where: {
-        token: hashedToken,
-        type: "EMAIL_CHANGE",
-        userId: user.id,
-        expiresAt: { gt: new Date() },
-      },
-      include: { user: true },
-    });
+    const storedToken = await this.userRepo.findValidEmailChangeTokenForUser(
+      hashedToken,
+      user.id,
+    );
 
     if (!storedToken) {
       throw new AppError(400, "Token is invalid or has expired");
     }
 
-    const pendingEmail = storedToken.user.pendingEmail?.trim().toLowerCase();
+    const { pendingEmail } = storedToken.user;
     if (!pendingEmail) {
       throw new AppError(400, "No pending email change request found");
     }
 
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        id: { not: user.id },
-        OR: [{ email: pendingEmail }, { pendingEmail }],
-      },
-      select: { id: true },
-    });
-
-    if (existingUser) {
+    if (await this.userRepo.isEmailTaken(pendingEmail)) {
       throw new AppError(400, "Email already in use");
     }
 
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: user.id },
-        data: {
-          email: pendingEmail,
-          pendingEmail: null,
-        },
-      }),
-      prisma.shortToken.delete({
-        where: { id: storedToken.id },
-      }),
-    ]);
+    await this.userRepo.updateEmailAndDeleteShortToken(
+      user.id,
+      pendingEmail,
+      storedToken.id,
+    );
   }
 }

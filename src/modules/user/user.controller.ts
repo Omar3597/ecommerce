@@ -8,7 +8,7 @@ import {
   updatePasswordSchema,
   verifyEmailChangeSchema,
 } from "./user.validator";
-import { PublicUserDto } from "./user.dto";
+import { toPublicUser } from "./user.dto";
 
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -25,7 +25,7 @@ export class UserController {
 
     res.status(200).json({
       status: "success",
-      data: PublicUserDto.parse(user),
+      data: toPublicUser(user),
     });
   });
 
@@ -34,7 +34,7 @@ export class UserController {
 
     res.status(200).json({
       status: "success",
-      data: PublicUserDto.parse(req.user),
+      data: toPublicUser(req.user),
     });
   });
 

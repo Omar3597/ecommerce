@@ -1,20 +1,6 @@
-import { prisma } from "../../lib/prisma";
 import AppError from "../../common/utils/appError";
 import { CreateCategoryInput, UpdateCategoryInput } from "./category.validator";
-
-const categorySelect = {
-  id: true,
-  name: true,
-  slug: true,
-  isHidden: true,
-  createdAt: true,
-  updatedAt: true,
-  _count: {
-    select: {
-      products: true,
-    },
-  },
-} as const;
+import { CategoryRepo } from "./category.repo";
 
 const slugify = (value: string) =>
   value
@@ -25,15 +11,14 @@ const slugify = (value: string) =>
     .replace(/-{2,}/g, "-");
 
 export class CategoryService {
+  constructor(private readonly categoryRepo: CategoryRepo) {}
+
   private async createUniqueSlug(baseSlug: string, excludedId?: string) {
     let nextSlug = baseSlug;
     let suffix = 2;
 
     while (true) {
-      const existingCategory = await prisma.category.findUnique({
-        where: { slug: nextSlug },
-        select: { id: true },
-      });
+      const existingCategory = await this.categoryRepo.findIdBySlug(nextSlug);
 
       if (!existingCategory || existingCategory.id === excludedId) {
         return nextSlug;
@@ -53,32 +38,22 @@ export class CategoryService {
 
     const slug = await this.createUniqueSlug(baseSlug);
 
-    return prisma.category.create({
-      data: {
-        name: data.name,
-        slug,
-        isHidden: data.isHidden ?? false,
-      },
-      select: categorySelect,
-    });
+    return this.categoryRepo.createCategory(
+      data.name,
+      slug,
+      data.isHidden ?? false,
+    );
   }
 
   async getAllCategories(includeHidden = false) {
-    return prisma.category.findMany({
-      where: includeHidden ? {} : { isHidden: false },
-      select: categorySelect,
-      orderBy: { createdAt: "desc" },
-    });
+    return this.categoryRepo.findAllCategories(includeHidden);
   }
 
   async getCategoryById(categoryId: string, includeHidden = false) {
-    const category = await prisma.category.findFirst({
-      where: {
-        id: categoryId,
-        ...(includeHidden ? {} : { isHidden: false }),
-      },
-      select: categorySelect,
-    });
+    const category = await this.categoryRepo.findCategoryById(
+      categoryId,
+      includeHidden,
+    );
 
     if (!category) {
       throw new AppError(404, "Category is not found");
@@ -88,10 +63,8 @@ export class CategoryService {
   }
 
   async updateCategory(categoryId: string, data: UpdateCategoryInput) {
-    const existingCategory = await prisma.category.findUnique({
-      where: { id: categoryId },
-      select: { id: true, name: true, slug: true },
-    });
+    const existingCategory =
+      await this.categoryRepo.findCategoryForUpdate(categoryId);
 
     if (!existingCategory) {
       throw new AppError(404, "Category is not found");
@@ -108,43 +81,20 @@ export class CategoryService {
       nextSlug = await this.createUniqueSlug(baseSlug, categoryId);
     }
 
-    return prisma.category.update({
-      where: { id: categoryId },
-      data: {
-        ...(data.name !== undefined && { name: data.name }),
-        ...(data.isHidden !== undefined && { isHidden: data.isHidden }),
-        ...(nextSlug !== undefined && { slug: nextSlug }),
-      },
-      select: categorySelect,
+    return this.categoryRepo.updateCategory(categoryId, {
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.isHidden !== undefined && { isHidden: data.isHidden }),
+      ...(nextSlug !== undefined && { slug: nextSlug }),
     });
   }
 
   async deleteCategory(categoryId: string) {
-    const category = await prisma.category.findUnique({
-      where: { id: categoryId },
-      select: {
-        id: true,
-        _count: {
-          select: {
-            products: true,
-          },
-        },
-      },
-    });
+    const category = await this.categoryRepo.findCategoryForDelete(categoryId);
 
     if (!category) {
       throw new AppError(404, "Category is not found");
     }
 
-    // if (category._count.products > 0) {
-    //   throw new AppError(
-    //     400,
-    //     "Cannot delete category while products still belong to it",
-    //   );
-    // }
-
-    await prisma.category.delete({
-      where: { id: categoryId },
-    });
+    await this.categoryRepo.deleteCategory(categoryId);
   }
 }

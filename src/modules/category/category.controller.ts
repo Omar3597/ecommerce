@@ -7,6 +7,12 @@ import {
   getCategorySchema,
   updateCategorySchema,
 } from "./category.validator";
+import {
+  toPublicCategoriesResponse,
+  toPublicCategoryResponse,
+  toCategoriesResponse,
+  toCategoryResponse,
+} from "./category.dto";
 
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
@@ -18,7 +24,7 @@ export class CategoryController {
 
     res.status(201).json({
       status: "success",
-      data: { category },
+      data: { category: toCategoryResponse(category) },
     });
   });
 
@@ -28,7 +34,7 @@ export class CategoryController {
     res.status(200).json({
       status: "success",
       results: categories.length,
-      data: { categories },
+      data: { categories: toPublicCategoriesResponse(categories) },
     });
   });
 
@@ -39,7 +45,7 @@ export class CategoryController {
       res.status(200).json({
         status: "success",
         results: categories.length,
-        data: { categories },
+        data: { categories: toCategoriesResponse(categories) },
       });
     },
   );
@@ -52,7 +58,7 @@ export class CategoryController {
 
     res.status(200).json({
       status: "success",
-      data: { category },
+      data: { category: toPublicCategoryResponse(category) },
     });
   });
 
@@ -64,7 +70,7 @@ export class CategoryController {
 
     res.status(200).json({
       status: "success",
-      data: { category },
+      data: { category: toCategoryResponse(category) },
     });
   });
 
@@ -79,7 +85,7 @@ export class CategoryController {
 
     res.status(200).json({
       status: "success",
-      data: { category },
+      data: { category: toCategoryResponse(category) },
     });
   });
 

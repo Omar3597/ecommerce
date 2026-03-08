@@ -47,7 +47,7 @@ model User {
   cart         Cart?
   addresses    Address[]
   orders       Order[]
-  refreshToken RefreshToken?
+  refreshToken RefreshToken[]
   shortTokens  ShortToken[]
   reviews      Review[]
 
@@ -213,6 +213,7 @@ model ShortToken {
   ///relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, type])
   @@index([userId])
   @@index([expiresAt])
   @@map("short_tokens")
@@ -220,16 +221,15 @@ model ShortToken {
 
 model RefreshToken {
   id        String   @id @default(uuid())
-  token     String   @unique
-  userId    String   @unique
+  token     String
+  userId    String
   expiresAt DateTime
   createdAt DateTime @default(now())
 
   //relations 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([expiresAt])
+  @@index([userId, expiresAt])
   @@map("refresh_token")
 }
 

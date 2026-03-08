@@ -1,5 +1,5 @@
 import AppError from "../../common/utils/appError";
-import { prisma } from "../../lib/prisma";
+import { OrderRepo } from "./order.repo";
 
 type ProductForOrder = {
   id: string;
@@ -33,56 +33,15 @@ type AddressForSnapshot = {
   building: string | null;
 };
 
-const orderWithSnapshotsSelect = {
-  id: true,
-  status: true,
-  subtotal: true,
-  shippingFee: true,
-  total: true,
-  createdAt: true,
-  updatedAt: true,
-  addressSnapshot: {
-    select: {
-      fullName: true,
-      phone: true,
-      city: true,
-      street: true,
-      building: true,
-    },
-  },
-  items: {
-    select: {
-      id: true,
-      quantity: true,
-      productSnapshot: {
-        select: {
-          id: true,
-          name: true,
-          summary: true,
-          price: true,
-        },
-      },
-    },
-    orderBy: { id: "asc" },
-  },
-} as const;
-
 export class orderService {
-  async getAllOrders(userId: string) {
-    const orders = await prisma.order.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      select: orderWithSnapshotsSelect,
-    });
+  constructor(private readonly orderRepo: OrderRepo = new OrderRepo()) {}
 
-    return orders;
+  async getAllOrders(userId: string) {
+    return this.orderRepo.findAllOrdersByUserId(userId);
   }
 
   async getOrderById(userId: string, orderId: string) {
-    const order = await prisma.order.findFirst({
-      where: { id: orderId, userId },
-      select: orderWithSnapshotsSelect,
-    });
+    const order = await this.orderRepo.findOrderByIdAndUserId(orderId, userId);
 
     if (!order) {
       throw new AppError(404, "Order not found");
@@ -92,56 +51,35 @@ export class orderService {
   }
 
   async createOrderFromCart(userId: string, addressId: string) {
-    return await prisma.$transaction(async (tx) => {
+    return this.orderRepo.runInTransaction(async (tx) => {
       const cart = await this.loadCart(tx, userId);
       const address = await this.loadAddress(tx, addressId, userId);
 
       const validItems = this.validateCartItems(cart.items);
-
-      const { subtotal, shippingFee, total } = this.calculateTotals(validItems);
-
+      const totals = this.calculateTotals(validItems);
       const orderExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-      const order = await this.createOrderWithAddressSnapshot({
-        tx,
+      const order = await this.orderRepo.createOrderWithAddressSnapshot(tx, {
         userId,
         address,
-        subtotal,
-        shippingFee,
-        total,
+        totals,
         orderExpiresAt,
       });
 
-      await this.createOrderItemsWithProductSnapshot(tx, order.id, validItems);
+      await this.orderRepo.createOrderItemsWithProductSnapshot(
+        tx,
+        order.id,
+        validItems,
+      );
       await this.decrementStockOrThrow(tx, validItems);
-      await this.clearCart(tx, cart.id);
+      await this.orderRepo.clearCart(tx, cart.id);
 
       return order;
     });
   }
 
   private async loadCart(tx: any, userId: string): Promise<CartForOrder> {
-    const cart = await tx.cart.findUnique({
-      where: { userId },
-      select: {
-        id: true,
-        items: {
-          select: {
-            quantity: true,
-            product: {
-              select: {
-                id: true,
-                name: true,
-                summary: true,
-                price: true,
-                stock: true,
-                isHidden: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    const cart = await this.orderRepo.findCartForOrder(tx, userId);
 
     if (!cart || cart.items.length === 0) {
       throw new AppError(404, "Cart is empty");
@@ -155,16 +93,7 @@ export class orderService {
     addressId: string,
     userId: string,
   ): Promise<AddressForSnapshot> {
-    const address = await tx.address.findUnique({
-      where: { id: addressId, userId },
-      select: {
-        fullName: true,
-        phone: true,
-        city: true,
-        street: true,
-        building: true,
-      },
-    });
+    const address = await this.orderRepo.findAddressForOrder(tx, addressId, userId);
 
     if (!address) {
       throw new AppError(404, "Address not found");
@@ -204,94 +133,17 @@ export class orderService {
     return { subtotal, shippingFee, total };
   }
 
-  private async createOrderWithAddressSnapshot({
-    tx,
-    userId,
-    address,
-    subtotal,
-    shippingFee,
-    total,
-    orderExpiresAt,
-  }: {
-    tx: any;
-    userId: string;
-    address: AddressForSnapshot;
-    subtotal: number;
-    shippingFee: number;
-    total: number;
-    orderExpiresAt: Date;
-  }) {
-    return await tx.order.create({
-      data: {
-        userId,
-        status: "PENDING",
-        subtotal,
-        shippingFee,
-        total,
-        addressSnapshot: {
-          create: {
-            fullName: address.fullName,
-            phone: address.phone,
-            city: address.city,
-            street: address.street,
-            building: address.building,
-          },
-        },
-        expiresAt: orderExpiresAt,
-      },
-      select: { id: true, status: true, total: true, createdAt: true },
-    });
-  }
-
-  private async createOrderItemsWithProductSnapshot(
-    tx: any,
-    orderId: string,
-    items: ValidCartItemForOrder[],
-  ) {
-    const snapshots = await Promise.all(
-      items.map((item) =>
-        tx.orderedProductSnapshot.create({
-          data: {
-            name: item.product.name,
-            summary: item.product.summary,
-            price: item.product.price,
-          },
-          select: { id: true },
-        }),
-      ),
-    );
-
-    await tx.orderItem.createMany({
-      data: items.map((item, index) => ({
-        orderId,
-        productSnapshotId: snapshots[index].id,
-        productId: item.product.id,
-        quantity: item.quantity,
-      })),
-    });
-  }
-
   private async decrementStockOrThrow(tx: any, items: ValidCartItemForOrder[]) {
     for (const item of items) {
-      const updated = await tx.product.updateMany({
-        where: {
-          id: item.product.id,
-          isHidden: false,
-          stock: { gte: item.quantity },
-        },
-        data: {
-          stock: { decrement: item.quantity },
-          soldQuantity: { increment: item.quantity },
-        },
-      });
+      const updated = await this.orderRepo.updateProductStockForOrder(
+        tx,
+        item.product.id,
+        item.quantity,
+      );
 
       if (updated.count !== 1) {
         throw new AppError(409, "Stock changed. Please refresh your cart");
       }
     }
-  }
-
-  private async clearCart(tx: any, cartId: string) {
-    await tx.cartItem.deleteMany({ where: { cartId } });
   }
 }

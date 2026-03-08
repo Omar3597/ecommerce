@@ -1,7 +1,6 @@
 import nodemailer from "nodemailer";
 import mjml from "mjml";
 import { htmlToText } from "html-to-text";
-import { type User } from "../../../generated/prisma/client";
 import { getConfig } from "../../config/env";
 
 const config = getConfig();
@@ -12,9 +11,9 @@ export class Email {
   private readonly url: string;
   private readonly from: string;
 
-  constructor(user: User, url: string) {
+  constructor(user: { firstName: string; email: string }, url: string) {
     this.to = user.email;
-    this.firstName = user.name.split(" ")[0];
+    this.firstName = user.firstName;
     this.url = url;
     this.from = `Omar Elgouhary <noreply@example.com>`;
   }
@@ -48,7 +47,7 @@ export class Email {
       const transporter = this.newTransport();
       await transporter.sendMail(mailOptions);
     } catch (err) {
-      console.error("Error sending email: ", err);
+      throw new Error(`Error sending email: ${err}`);
     }
   }
 

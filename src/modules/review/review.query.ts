@@ -10,7 +10,7 @@ export const reviewsQuery: QueryConfig = {
     },
     createdAt: { type: "date", ops: ["equals", "gte", "lte", "gt", "lt"] },
   },
-  sort: ["comment", "rating", "createdAt"],
+  sort: ["comment", "rating", "createdAt", "updatedAt"],
   defaultLimit: 15,
   maxLimit: 70,
 };

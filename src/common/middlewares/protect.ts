@@ -32,7 +32,14 @@ export const protect = catchAsync(
       return next(new AppError(401, "Invalid or expired token"));
     }
 
-    const user = await prisma.user.findUnique({ where: { id: payload.id } });
+    const user = await prisma.user.findFirst({
+      where: {
+        id: payload.id,
+        isBanned: false,
+        isDeleted: false,
+        isVerified: true,
+      },
+    });
 
     if (!user) {
       return next(new AppError(401, "User no longer exists"));

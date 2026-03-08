@@ -1,18 +1,9 @@
-import { z } from "zod";
-
-const UserSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  email: z.email(),
-  role: z.enum(["USER", "ADMIN", "MANAGER"]),
-  password: z.string(),
-  isDeleted: z.boolean(),
-  createdAt: z.date(),
-});
-
-export const PublicUserDto = UserSchema.pick({
-  id: true,
-  name: true,
-  email: true,
-  role: true,
-});
+export function toPublicUser(u: Record<string, any>) {
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    createdAt: u.createdAt,
+  };
+}

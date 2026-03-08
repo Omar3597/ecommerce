@@ -7,8 +7,9 @@ import {
   forgotPasswordSchema,
   passwordResetSchema,
   verifyEmailSchema,
+  refreshTokenSchema,
 } from "./auth.validator";
-import { PublicUserDto } from "./auth.dto";
+import { toPublicUser } from "./auth.dto";
 import { assertAuth } from "../../common/guards/assert-auth";
 
 export class AuthController {
@@ -16,12 +17,20 @@ export class AuthController {
 
   private sendRefreshTokenCookie(res: Response, token: string) {
     const cookieOptions = {
-      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      expires: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
     };
 
     res.cookie("refreshToken", token, cookieOptions);
+  }
+
+  private clearRefreshTokenCookie(res: Response) {
+    res.cookie("refreshToken", "", {
+      httpOnly: true,
+      expires: new Date(0),
+      secure: process.env.NODE_ENV === "production",
+    });
   }
 
   public createUser = catchAsync(async (req: Request, res: Response) => {
@@ -31,7 +40,7 @@ export class AuthController {
 
     res.status(201).json({
       status: "success",
-      data: PublicUserDto.parse(user),
+      data: toPublicUser(user),
     });
   });
 
@@ -46,22 +55,26 @@ export class AuthController {
     res.status(200).json({
       status: "success",
       data: {
-        user: PublicUserDto.parse(user),
+        user: toPublicUser(user),
         accessToken,
       },
     });
   });
 
   public getrefreshToken = catchAsync(async (req: Request, res: Response) => {
-    const { refreshToken } = req.cookies;
+    const validatedData = refreshTokenSchema.parse(req);
 
-    const { user, accessToken } = await this.authService.refresh(refreshToken);
+    const { refreshToken } = validatedData.cookies;
+
+    const result = await this.authService.rotateRefreshToken(refreshToken);
+
+    this.sendRefreshTokenCookie(res, result.refreshToken);
 
     res.status(200).json({
       status: "success",
       data: {
-        user: PublicUserDto.parse(user),
-        accessToken,
+        user: toPublicUser(result.user),
+        accessToken: result.accessToken,
       },
     });
   });
@@ -110,12 +123,24 @@ export class AuthController {
   public logout = catchAsync(async (req: Request, res: Response) => {
     assertAuth(req);
 
-    await this.authService.logout(req.user.id);
-    res.cookie("refreshToken", "", {
-      httpOnly: true,
-      expires: new Date(0),
-    });
+    const validatedData = refreshTokenSchema.parse(req);
+
+    const { refreshToken } = validatedData.cookies;
+
+    await this.authService.logout(refreshToken);
+    this.clearRefreshTokenCookie(res);
 
     res.status(204).send();
   });
+
+  public logoutFromAllDevices = catchAsync(
+    async (req: Request, res: Response) => {
+      assertAuth(req);
+
+      await this.authService.logoutFromAllDevices(req.user.id);
+      this.clearRefreshTokenCookie(res);
+
+      res.status(204).send();
+    },
+  );
 }

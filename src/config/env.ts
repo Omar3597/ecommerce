@@ -15,6 +15,7 @@ interface IConfig {
   stripeWebhookSecret: string;
   successUrl: string;
   cancelUrl: string;
+  maxActiveSessions: number;
 }
 
 export const getConfig = (): IConfig => {
@@ -32,6 +33,7 @@ export const getConfig = (): IConfig => {
     STRIPE_WEBHOOK_SECRET,
     SUCCESS_URL,
     CANCEL_URL,
+    MAX_ACTIVE_SESSIONS,
   } = process.env;
 
   if (
@@ -47,7 +49,8 @@ export const getConfig = (): IConfig => {
     !STRIPE_SECRET_KEY ||
     !STRIPE_WEBHOOK_SECRET ||
     !SUCCESS_URL ||
-    !CANCEL_URL
+    !CANCEL_URL ||
+    !MAX_ACTIVE_SESSIONS
   ) {
     throw new Error("Missing required environment variables");
   }
@@ -74,5 +77,6 @@ export const getConfig = (): IConfig => {
     stripeWebhookSecret: STRIPE_WEBHOOK_SECRET,
     successUrl: SUCCESS_URL,
     cancelUrl: CANCEL_URL,
+    maxActiveSessions: Number(MAX_ACTIVE_SESSIONS),
   };
 };

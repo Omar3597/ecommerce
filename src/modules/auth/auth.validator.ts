@@ -92,6 +92,12 @@ export const verifyEmailSchema = z.object({
   }),
 });
 
+export const refreshTokenSchema = z.object({
+  cookies: z.object({
+    refreshToken: z.string("refreshToken is required").trim().min(1),
+  }),
+});
+
 export type SignupInput = z.infer<typeof signupSchema>["body"];
 export type LoginInput = z.infer<typeof loginSchema>["body"];
 export type forgotPasswordInput = z.infer<typeof forgotPasswordSchema>["body"];

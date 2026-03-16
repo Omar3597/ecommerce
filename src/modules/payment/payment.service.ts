@@ -1,12 +1,14 @@
 import AppError from "../../common/utils/appError";
 import { getConfig } from "../../config/env";
-import { prisma } from "../../lib/prisma";
 import Stripe from "stripe";
+import { PaymentRepo } from "./payment.repo";
 
 const config = getConfig();
 const stripe = new Stripe(config.stripeSecret);
 
 export class PaymentService {
+  constructor(private readonly paymentRepo: PaymentRepo = new PaymentRepo()) {}
+
   async createCheckoutSessionForOrder(userId: string, orderId: string) {
     const order = await this.getPendingOrderOrThrow(userId, orderId);
     const lineItems = this.buildStripeLineItems(order);
@@ -25,7 +27,7 @@ export class PaymentService {
       throw new AppError(502, "Stripe session ID is missing");
     }
 
-    await this.updateOrderTransactionId(order.id, session.id);
+    await this.paymentRepo.updateOrderTransactionId(order.id, session.id);
 
     return session.id;
   }
@@ -56,25 +58,7 @@ export class PaymentService {
   }
 
   private async getPendingOrderOrThrow(userId: string, orderId: string) {
-    const order = await prisma.order.findFirst({
-      where: { id: orderId, userId },
-      select: {
-        id: true,
-        status: true,
-        shippingFee: true,
-        items: {
-          select: {
-            quantity: true,
-            productSnapshot: {
-              select: {
-                name: true,
-                price: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    const order = await this.paymentRepo.findOrderForPayment(orderId, userId);
 
     if (!order) {
       throw new AppError(404, "Order not found");
@@ -160,16 +144,6 @@ export class PaymentService {
     }
   }
 
-  private async updateOrderTransactionId(
-    orderId: string,
-    transactionId: string,
-  ) {
-    await prisma.order.update({
-      where: { id: orderId },
-      data: { transactionId },
-    });
-  }
-
   private async markOrderAsPaid(session: Stripe.Checkout.Session) {
     if (session.payment_status !== "paid") {
       return;
@@ -181,21 +155,6 @@ export class PaymentService {
         ? orderIdFromMeta
         : null;
 
-    const where: Record<string, string> = {
-      status: "PENDING",
-      transactionId: session.id,
-    };
-
-    if (orderId) {
-      where.id = orderId;
-    }
-
-    await prisma.order.updateMany({
-      where,
-      data: {
-        status: "PAID",
-        transactionId: session.id,
-      },
-    });
+    await this.paymentRepo.markOrderAsPaidBySessionId(session.id, orderId);
   }
 }

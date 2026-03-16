@@ -12,7 +12,7 @@ process.on("uncaughtException", (err: Error) => {
 
 const config = getConfig();
 
-const server = app.listen(config.port, "127.0.0.1", () => {
+const server = app.listen(config.port, "0.0.0.0", () => {
   console.log(`Server running on port ${config.port}`);
 });
 

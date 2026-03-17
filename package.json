@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --watch src --watch prisma --exec tsx src/server.ts",
-    "prisma:generate": "DATABASE_URL=${DATABASE_URL:-postgresql://postgres:password@localhost:5432/ecommerce_db} prisma generate",
+    "prisma:generate": "DATABASE_URL=${DATABASE_URL:-postgresql://placeholder:placeholder@localhost:5432/placeholder} prisma generate",
     "build": "npm run prisma:generate && tsc --project tsconfig.json && printf '{\"type\":\"commonjs\"}\\n' > dist/package.json",
     "start": "node dist/src/server.js"
   },

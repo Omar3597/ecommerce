@@ -10,7 +10,7 @@ COPY prisma.config.ts ./
 COPY tsconfig.json ./
 COPY src ./src/
 
-ENV DATABASE_URL=postgresql://postgres:password@localhost:5432/ecommerce_db
+ENV DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder
 RUN npm run build
 
 FROM node:24-alpine AS runner

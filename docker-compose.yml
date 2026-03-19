@@ -6,20 +6,20 @@ services:
     container_name: postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
-      POSTGRES_DB: ${POSTGRES_DB:-ecommerce_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: ${DB_NAME:-ecommerce_db}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
-      - ecommerce_db:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
     networks:
       - ecommerce_network
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ecommerce_db} || exit 1",
+          "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-ecommerce_db} || exit 1",
         ]
       interval: 10s
       timeout: 5s
@@ -29,10 +29,28 @@ services:
     build: .
     container_name: ecommerce_app
     restart: unless-stopped
-    env_file:
-      - .env
     environment:
       DB_HOST: postgres
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-password}
+      DB_NAME: ${DB_NAME:-ecommerce_db}
+      DATABASE_URL: postgres://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:${DB_PORT:-5432}/${DB_NAME:-ecommerce_db}
+      NODE_ENV: ${NODE_ENV:-development}
+      APP_PORT: ${APP_PORT:-3000}
+      BASE_URL: ${BASE_URL:-http://localhost:3000/api/v1}
+      JWT_SECRET: ${JWT_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USER: ${MAIL_USER}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-your_email_password}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL}
+      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL}
+      MAX_CART_QUANTITY: ${MAX_CART_QUANTITY:-15}
+      MAX_ACTIVE_SESSIONS: ${MAX_ACTIVE_SESSIONS:-3}
     ports:
       - "${APP_PORT:-3000}:3000"
     depends_on:
@@ -42,7 +60,7 @@ services:
       - ecommerce_network
 
 volumes:
-  ecommerce_db:
+  db_data:
     driver: local
 
 networks:

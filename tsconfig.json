@@ -1,9 +1,13 @@
 {
   "compilerOptions": {
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "module": "CommonJS",
+    "moduleResolution": "node",
     "target": "ES2023",
     "strict": true,
-    "esModuleInterop": true
-  }
+    "esModuleInterop": true,
+    "outDir": "./dist",
+    "rootDir": "."
+  },
+  "include": ["src/**/*.ts", "generated/prisma/**/*.ts", "prisma/seed/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

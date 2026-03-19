@@ -41,9 +41,9 @@ app.use(hpp());
 
 const { env } = getConfig();
 
-if (env == "development") {
-  app.use(morgan("dev"));
-}
+// if (env == "development") {
+//   app.use(morgan("dev"));
+// }
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", protect, userRouter);

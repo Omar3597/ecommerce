@@ -37,7 +37,7 @@ export class AuthService {
   }
 
   private generateAccessToken(userId: string, role: string) {
-    return jwt.sign({ id: userId, role }, config.jwtSecret, {
+    return jwt.sign({ id: userId, role }, config.JWT_SECRET, {
       expiresIn: "15m",
     });
   }
@@ -48,7 +48,7 @@ export class AuthService {
 
   private hashRefreshToken(refreshToken: string) {
     return crypto
-      .createHmac("sha256", config.refreshSecret)
+      .createHmac("sha256", config.REFRESH_TOKEN_SECRET)
       .update(refreshToken)
       .digest("hex");
   }
@@ -62,7 +62,7 @@ export class AuthService {
   private async enforceMaxSessions(userId: string) {
     const activeSessions = await this.authRepo.countSessionsByUserId(userId);
 
-    if (activeSessions >= config.maxActiveSessions) {
+    if (activeSessions >= config.MAX_ACTIVE_SESSIONS) {
       await this.authRepo.deleteOldestSession(userId);
     }
   }

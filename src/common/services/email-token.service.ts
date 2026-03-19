@@ -102,7 +102,7 @@ export class AuthEmailTokenService {
       ? `${cleanPrefix}/${cleanEndpoint}`
       : cleanPrefix;
 
-    return `${config.baseURL}${path}/${rawToken}`;
+    return `${config.BASE_URL}${path}/${rawToken}`;
   }
 
   private async sendEmail(

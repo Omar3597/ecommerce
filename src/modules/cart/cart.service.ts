@@ -37,7 +37,7 @@ export class CartService {
       };
     }
 
-    const maxAllowed = Math.min(stock, config.maxCartQuantity);
+    const maxAllowed = Math.min(stock, config.MAX_CART_QUANTITY);
 
     if (quantity > maxAllowed)
       throw new AppError(400, "Quantity exceeds allowed limit");

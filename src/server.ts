@@ -12,8 +12,8 @@ process.on("uncaughtException", (err: Error) => {
 
 const config = getConfig();
 
-const server = app.listen(config.port, "0.0.0.0", () => {
-  console.log(`Server running on port ${config.port}`);
+const server = app.listen(config.APP_PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${config.APP_PORT}`);
 });
 
 process.on("unhandledRejection", (err: unknown) => {

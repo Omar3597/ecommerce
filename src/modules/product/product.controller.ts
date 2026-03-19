@@ -34,7 +34,7 @@ export class ProductController {
     const result = await this.productService.getAllProducts(req.query);
     const { pagination, products } = toPaginatedPublicResponse(
       result,
-      config.maxCartQuantity,
+      config.MAX_CART_QUANTITY,
     );
 
     res.status(200).json({
@@ -47,10 +47,7 @@ export class ProductController {
 
   public getAllProductsAdmin = catchAsync(
     async (req: Request, res: Response) => {
-      const result = await this.productService.getAllProducts(
-        req.query,
-        true,
-      );
+      const result = await this.productService.getAllProducts(req.query, true);
       const { pagination, products } = toPaginatedAdminResponse(result);
 
       res.status(200).json({
@@ -93,7 +90,7 @@ export class ProductController {
     const product = await this.productService.getProductById(productId);
     const publicProduct = toPublicProductDetails(
       product,
-      config.maxCartQuantity,
+      config.MAX_CART_QUANTITY,
     );
 
     res.status(200).json({

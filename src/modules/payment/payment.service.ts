@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import { PaymentRepo } from "./payment.repo";
 
 const config = getConfig();
-const stripe = new Stripe(config.stripeSecret);
+const stripe = new Stripe(config.STRIPE_SECRET_KEY);
 
 export class PaymentService {
   constructor(private readonly paymentRepo: PaymentRepo = new PaymentRepo()) {}
@@ -13,13 +13,13 @@ export class PaymentService {
     const order = await this.getPendingOrderOrThrow(userId, orderId);
     const lineItems = this.buildStripeLineItems(order);
 
-    const { successUrl, cancelUrl } = config;
+    const { STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL } = config;
 
     const session = await this.createCheckoutSession({
       orderId: order.id,
       userId,
-      successUrl,
-      cancelUrl,
+      successUrl: STRIPE_SUCCESS_URL,
+      cancelUrl: STRIPE_CANCEL_URL,
       lineItems,
     });
 
@@ -37,7 +37,7 @@ export class PaymentService {
       return stripe.webhooks.constructEvent(
         payload,
         signature,
-        config.stripeWebhookSecret,
+        config.STRIPE_WEBHOOK_SECRET,
       );
     } catch {
       throw new AppError(400, "Invalid Stripe webhook signature");

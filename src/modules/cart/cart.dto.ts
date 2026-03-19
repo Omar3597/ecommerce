@@ -12,7 +12,7 @@ export const getCartDto = (cart: any) => {
 
       const status =
         !product.isHidden && product.stock > 0 ? "in_stock" : "out_of_stock";
-      const maxQuantity = Math.min(product.stock, config.maxCartQuantity);
+      const maxQuantity = Math.min(product.stock, config.MAX_CART_QUANTITY);
 
       return {
         id: item.id,
@@ -33,7 +33,7 @@ export const getCartDto = (cart: any) => {
 
 export const updateCartItemDto = (data: any) => {
   const status = !data.isHidden && data.stock > 0 ? "in_stock" : "out_of_stock";
-  const maxQuantity = Math.min(data.stock, config.maxCartQuantity);
+  const maxQuantity = Math.min(data.stock, config.MAX_CART_QUANTITY);
 
   return {
     id: data.id,

@@ -20,11 +20,11 @@ export class Email {
 
   private newTransport() {
     return nodemailer.createTransport({
-      host: "sandbox.smtp.mailtrap.io",
-      port: 587,
+      host: `${config.MAIL_HOST}`,
+      port: config.MAIL_PORT,
       auth: {
-        user: config.mailUser,
-        pass: config.mailPass,
+        user: config.MAIL_USER,
+        pass: config.MAIL_PASSWORD,
       },
     });
   }

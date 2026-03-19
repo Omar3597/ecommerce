@@ -27,7 +27,7 @@ export const protect = catchAsync(
     let payload: JwtPayload;
 
     try {
-      payload = jwt.verify(token, config.jwtSecret) as JwtPayload;
+      payload = jwt.verify(token, config.JWT_SECRET) as JwtPayload;
     } catch {
       return next(new AppError(401, "Invalid or expired token"));
     }

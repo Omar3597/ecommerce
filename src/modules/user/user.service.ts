@@ -6,7 +6,7 @@ import {
   updatePasswordInput,
   verifyEmailChangeInput,
 } from "./user.validator";
-import { User } from "../../../generated/prisma/client";
+import { User } from "@prisma/client";
 import crypto from "crypto";
 import {
   AuthEmailTokenService,

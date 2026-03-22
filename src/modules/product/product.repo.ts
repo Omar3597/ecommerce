@@ -2,7 +2,7 @@ import { prisma } from "../../lib/prisma";
 import { buildPrismaArgs } from "../../common/query/query.engine";
 import { productQuery } from "./product.query";
 import { CreateProductInput, UpdateProductInput } from "./product.validator";
-import { Prisma, PrismaClient } from "../../../generated/prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 const productAdminSelect: Prisma.ProductSelect = {
   id: true,

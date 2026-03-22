@@ -1,4 +1,4 @@
-import { Prisma } from "../../../generated/prisma/client";
+import { Prisma } from "@prisma/client";
 import AppError from "../../common/utils/appError";
 import { CreateReviewInput, UpdateReviewInput } from "./review.validator";
 import { Actor, ReviewPolicy } from "./review.policy";

@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { PrismaClient, TokenType } from "../../../generated/prisma/client";
+import { PrismaClient, TokenType } from "@prisma/client";
 import Email from "../utils/email";
 import { getConfig } from "../../config/env";
 

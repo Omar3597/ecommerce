@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../../generated/prisma/client";
-import { getConfig } from "../../src/config/env";
+import { PrismaClient } from "@prisma/client";
+import { getConfig } from "../config/env";
 import { faker } from "@faker-js/faker";
 import bcrypt from "bcrypt";
 
@@ -12,7 +12,7 @@ const connectionString = `${config.DATABASE_URL}`;
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
-async function createManager() {
+async function seedManager() {
   const managerPass = await bcrypt.hash("manager@1234", 12);
   await prisma.user.create({
     data: {
@@ -26,7 +26,7 @@ async function createManager() {
 }
 
 async function seedUsers(minUsersNeeded: number) {
-  await createManager();
+  await seedManager();
 
   const password = await bcrypt.hash("Test@1234", 12);
 

@@ -1,15 +1,8 @@
-
 services:
   postgres:
     image: postgres:15-alpine
     container_name: ecommerce_postgres_test
-    volumes:
-      - postgres_data_test:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     env_file:
       - .env.test
-
-volumes:
-  postgres_data_test:
-    driver: local

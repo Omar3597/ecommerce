@@ -3,7 +3,12 @@ node_modules
 /dist
 
 .env
+.env.production
+.env.test
 
 /generated/prisma
 
 package-lock.json
+
+prisma/migrations
+

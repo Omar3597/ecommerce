@@ -1,0 +1,47 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ecommerce_postgres_prod
+    restart: unless-stopped
+    networks:
+      - ecommerce_network
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    env_file:
+      - .env.production
+
+  app:
+    container_name: ecommerce_app_prod
+    env_file:
+      - .env.production
+    build:
+      context: .
+      target: production
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ecommerce_network
+    ports:
+      - "80:3000"
+
+networks:
+  ecommerce_network:
+    driver: bridge
+
+volumes:
+  postgres_data_prod:
+    driver: local

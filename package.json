@@ -5,9 +5,16 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "prisma:seed": "tsx prisma/seed.ts",
     "build": "tsc",
-    "start": "node dist/src/server.js"
+    "start": "node dist/server.js",
+    "db:migrate:test": "dotenv -e .env.test -- npx prisma migrate deploy",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up -d",
+    "docker:dev:down": "docker-compose -f docker-compose.dev.yml down",
+    "db:seed:dev": "tsx src/seed/dev.seed.ts",
+    "db:seed:prod": "node dist/seed/prod.seed.js",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up -d",
+    "docker:prod:down": "docker-compose -f docker-compose.prod.yml down",
+    "test:int": "docker-compose -f docker-compose.test.yml up -d && sleep 3 && npm run db:migrate:test && dotenv -e .env.test -- vitest run; docker-compose -f docker-compose.test.yml down -v"
   },
   "keywords": [],
   "author": "",
@@ -27,11 +34,16 @@
     "@types/node": "^25.1.0",
     "@types/nodemailer": "^7.0.9",
     "@types/pg": "^8.16.0",
+    "@types/supertest": "^7.2.0",
     "@types/validator": "^13.15.10",
+    "@vitest/ui": "^4.1.0",
+    "dotenv-cli": "^7.4.2",
     "morgan": "^1.10.1",
     "nodemon": "^3.1.11",
+    "supertest": "^7.2.2",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.5.0",

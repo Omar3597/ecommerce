@@ -1,5 +1,8 @@
 import dotenv from "dotenv";
-dotenv.config({ path: ".env" });
+
+const env = process.env.NODE_ENV || "development";
+const envFile = env === "development" ? ".env" : `.env.${env}`;
+dotenv.config({ path: envFile });
 
 interface IConfig {
   DB_HOST: string;
@@ -8,7 +11,7 @@ interface IConfig {
   DB_PASSWORD: string;
   DB_NAME: string;
   DATABASE_URL: string;
-  env: "development" | "production";
+  env: "development" | "production" | "test";
   APP_PORT: number;
   BASE_URL: string;
   JWT_SECRET: string;
@@ -77,7 +80,7 @@ export const getConfig = (): IConfig => {
   }
 
   const isValidEnv = (env: string): env is IConfig["env"] => {
-    return env === "development" || env === "production";
+    return env === "development" || env === "production" || env === "test";
   };
 
   if (!isValidEnv(NODE_ENV)) {

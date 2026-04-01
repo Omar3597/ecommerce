@@ -31,7 +31,7 @@ export class CartController {
 
     const cartItem = await this.cartService.addToCart(req.user.id, productId);
 
-    res.status(200).json({
+    res.status(201).json({
       status: "success",
       data: { cartItem },
     });

@@ -34,6 +34,7 @@ describe("Address Integration Tests", () => {
       expect(response.body.data.address).toHaveProperty("id");
       expect(response.body.data.address.fullName).toBe(addressData.fullName);
       expect(response.body.data.address.phone).toBe(addressData.phone);
+      expect(response.body.data.address.building).toBe(addressData.building);
     });
 
     it("should fail validation if required fields are missing", async () => {
@@ -90,6 +91,19 @@ describe("Address Integration Tests", () => {
       expect(response.body.status).toBe("success");
       expect(response.body.results).toBe(1);
       expect(response.body.data.addresses[0].id).toBeDefined();
+    });
+
+    it("should return an empty array if the user has no addresses", async () => {
+      const { token } = await seedUser();
+
+      const response = await request(app)
+        .get(baseUrl)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+      expect(response.body.results).toBe(0);
+      expect(response.body.data.addresses).toEqual([]);
     });
 
     it("should fail when unauthorized", async () => {
@@ -204,6 +218,17 @@ describe("Address Integration Tests", () => {
 
       const addresses = checkResponse.body.data.addresses;
       expect(addresses.find((a: any) => a.id === address.id)).toBeUndefined();
+    });
+
+    it("should return a 404 error when trying to delete a non-existent address", async () => {
+      const { token } = await seedUser();
+      const fakeUuid = "00000000-0000-0000-0000-000000000000";
+
+      const response = await request(app)
+        .delete(`${baseUrl}/${fakeUuid}`)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(404);
     });
 
     it("should fail when unauthorized", async () => {

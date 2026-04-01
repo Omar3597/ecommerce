@@ -17,14 +17,12 @@ describe("Auth Integration Tests", () => {
 
   describe("POST /api/v1/auth/register", () => {
     it("should register a new user successfully", async () => {
-      const response = await request(app)
-        .post("/api/v1/auth/register")
-        .send({
-          name: "Auth New User",
-          email: `auth-register-${Date.now()}@example.com`,
-          password: "MySecurePassword123#",
-          passwordConfirm: "MySecurePassword123#",
-        });
+      const response = await request(app).post("/api/v1/auth/register").send({
+        name: "Auth New User",
+        email: `auth-register@example.com`,
+        password: "MySecurePassword123#",
+        passwordConfirm: "MySecurePassword123#",
+      });
 
       expect(response.status).toBe(201);
       expect(response.body.status).toBe("success");
@@ -114,7 +112,7 @@ describe("Auth Integration Tests", () => {
         .post("/api/v1/auth/forgot-password")
         .send({ email: user.email });
 
-      expect([200, 404]).toContain(response.status);
+      expect(response.status).toBe(200);
     });
   });
 
@@ -130,7 +128,7 @@ describe("Auth Integration Tests", () => {
           passwordConfirm: "NewSecurePassword123#",
         });
 
-      expect([400, 404]).toContain(response.status);
+      expect(response.status).toBe(400);
     });
 
     it("should reset password with a valid token", async () => {
@@ -158,8 +156,7 @@ describe("Auth Integration Tests", () => {
           passwordConfirm: "NewSecurePassword123#",
         });
 
-      // The endpoint should succeed if it uses hashed token lookup
-      expect([200, 400, 404]).toContain(response.status);
+      expect(response.status).toBe(200);
     });
   });
 
@@ -172,7 +169,7 @@ describe("Auth Integration Tests", () => {
         `/api/v1/auth/verify-email/${fakeToken}`,
       );
 
-      expect([400, 404]).toContain(response.status);
+      expect(response.status).toBe(400);
     });
 
     it("should verify email with a valid token", async () => {
@@ -197,7 +194,7 @@ describe("Auth Integration Tests", () => {
         `/api/v1/auth/verify-email/${rawToken}`,
       );
 
-      expect([200, 400, 404]).toContain(response.status);
+      expect(response.status).toBe(200);
     });
   });
 
@@ -227,7 +224,7 @@ describe("Auth Integration Tests", () => {
           ? [cookiesRaw]
           : [];
       expect(cookies.length).toBeGreaterThan(0);
-      expect(cookies.some((c) => c.includes("refreshToken="))).toBe(true);
+      expect(cookies.some((c) => c.includes("refreshToken=;"))).toBe(true);
     });
 
     it("should block unauthenticated users", async () => {
@@ -242,7 +239,6 @@ describe("Auth Integration Tests", () => {
     it("should successfully logout the user from all devices", async () => {
       const { user, token } = await seedUser({ password: standardPassword });
 
-      // Create some refresh tokens for this user
       const loginRes = await request(app)
         .post("/api/v1/auth/login")
         .send({ email: user.email, password: standardPassword });
@@ -251,7 +247,7 @@ describe("Auth Integration Tests", () => {
         .post("/api/v1/auth/logout-all")
         .set("Authorization", `Bearer ${token}`);
 
-      expect([200, 204]).toContain(response.status);
+      expect(response.status).toBe(204);
     });
 
     it("should block unauthenticated users", async () => {
@@ -263,9 +259,18 @@ describe("Auth Integration Tests", () => {
   // ─── Refresh Token ─────────────────────────────────────────────────────────
 
   describe("POST /api/v1/auth/refresh", () => {
-    it("should return 401 if refreshToken cookie is missing", async () => {
+    it("should return 400 if refreshToken cookie is missing", async () => {
       const response = await request(app).post("/api/v1/auth/refresh");
-      expect([400, 401]).toContain(response.status);
+      expect(response.status).toBe(400);
+    });
+
+    it("should return 401 if invalid refreshToken cookie", async () => {
+      const fakeToken = crypto.randomBytes(32).toString("hex");
+      const response = await request(app)
+        .post("/api/v1/auth/refresh")
+        .set("Cookie", `refreshToken=${fakeToken}`);
+
+      expect(response.status).toBe(401);
     });
   });
 });

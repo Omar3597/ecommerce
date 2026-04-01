@@ -35,18 +35,30 @@ describe("Category Integration Tests", () => {
     it("should fail to create a category when authenticated as a regular user", async () => {
       const { token } = await seedUser({ role: Role.USER });
 
+      const categoryData = {
+        name: "Electronics " + Date.now(),
+        slug: "electronics-" + Date.now(),
+        isHidden: false,
+      };
+
       const response = await request(app)
         .post("/api/v1/admin/categories")
         .set("Authorization", `Bearer ${token}`)
-        .send({ name: "Fail Category", slug: "test-category-fail" });
+        .send(categoryData);
 
       expect(response.status).toBe(403);
     });
 
     it("should fail to create a category when unauthenticated", async () => {
+      const categoryData = {
+        name: "Electronics " + Date.now(),
+        slug: "electronics-" + Date.now(),
+        isHidden: false,
+      };
+
       const response = await request(app)
         .post("/api/v1/admin/categories")
-        .send({ name: "Fail Category No Auth", slug: "test-category-no-auth" });
+        .send(categoryData);
 
       expect(response.status).toBe(401);
     });
@@ -86,6 +98,22 @@ describe("Category Integration Tests", () => {
       expect(response.body.status).toBe("success");
       expect(Array.isArray(response.body.data.categories)).toBe(true);
       expect(response.body.data.categories[0].isHidden).toBeDefined();
+    });
+
+    it("should fail to get all categories when authenticated as a regular user", async () => {
+      const { token } = await seedUser({ role: Role.USER });
+
+      const response = await request(app)
+        .get("/api/v1/admin/categories")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(403);
+    });
+
+    it("should fail to get all categories when unauthenticated", async () => {
+      const response = await request(app).get("/api/v1/admin/categories");
+
+      expect(response.status).toBe(401);
     });
   });
 
@@ -129,6 +157,31 @@ describe("Category Integration Tests", () => {
       expect(response.body.status).toBe("success");
       expect(response.body.data.category.name).toBe(updateData.name);
     });
+
+    it("should fail to update a category when authenticated as a regular user", async () => {
+      const { token } = await seedUser({ role: Role.USER });
+      const { category } = await seedCategory();
+
+      const updateData = { name: "Updated Category " + Date.now() };
+
+      const response = await request(app)
+        .patch(`/api/v1/admin/categories/${category.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send(updateData);
+
+      expect(response.status).toBe(403);
+    });
+
+    it("should fail to update a category when unauthenticated", async () => {
+      const { category } = await seedCategory();
+      const updateData = { name: "Updated Category " + Date.now() };
+
+      const response = await request(app)
+        .patch(`/api/v1/admin/categories/${category.id}`)
+        .send(updateData);
+
+      expect(response.status).toBe(401);
+    });
   });
 
   // ─── DELETE (Admin) ────────────────────────────────────────────────────────
@@ -149,6 +202,26 @@ describe("Category Integration Tests", () => {
         `/api/v1/categories/${category.id}`,
       );
       expect(checkResponse.status).toBe(404);
+    });
+
+    it("should fail to delete a category when authenticated as a regular user", async () => {
+      const { token } = await seedUser({ role: Role.USER });
+      const { category } = await seedCategory();
+
+      const response = await request(app)
+        .delete(`/api/v1/admin/categories/${category.id}`)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(403);
+    });
+
+    it("should fail to delete a category when unauthenticated", async () => {
+      const { category } = await seedCategory();
+
+      const response = await request(app)
+        .delete(`/api/v1/admin/categories/${category.id}`);
+
+      expect(response.status).toBe(401);
     });
   });
 });

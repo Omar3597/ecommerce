@@ -34,22 +34,26 @@ export const resetDatabase = async () => {
  * Seeds a single user and generates their JWT authentication token.
  * Returns the user record, token, and the plaintext password.
  */
-export const seedUser = async (overrides: Partial<{
-  name: string;
-  email: string;
-  password: string;
-  role: Role;
-  isVerified: boolean;
-  isBanned: boolean;
-  isDeleted: boolean;
-}> = {}) => {
+export const seedUser = async (
+  overrides: Partial<{
+    name: string;
+    email: string;
+    password: string;
+    role: Role;
+    isVerified: boolean;
+    isBanned: boolean;
+    isDeleted: boolean;
+  }> = {},
+) => {
   const password = overrides.password || "StrongPassword123#";
   const hashedPassword = await bcrypt.hash(password, 1);
 
   const user = await prisma.user.create({
     data: {
       name: overrides.name || "Test User",
-      email: overrides.email || `user-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`,
+      email:
+        overrides.email ||
+        `user-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`,
       password: hashedPassword,
       role: overrides.role || Role.USER,
       isVerified: overrides.isVerified ?? true,
@@ -70,11 +74,13 @@ export const seedUser = async (overrides: Partial<{
 /**
  * Seeds a standalone category. Use this when you need a category without a product.
  */
-export const seedCategory = async (overrides: Partial<{
-  name: string;
-  slug: string;
-  isHidden: boolean;
-}> = {}) => {
+export const seedCategory = async (
+  overrides: Partial<{
+    name: string;
+    slug: string;
+    isHidden: boolean;
+  }> = {},
+) => {
   const suffix = Date.now() + "-" + Math.random().toString(36).slice(2);
   const category = await prisma.category.create({
     data: {
@@ -92,16 +98,18 @@ export const seedCategory = async (overrides: Partial<{
 /**
  * Seeds a category and one product belonging to it.
  */
-export const seedCategoryAndProduct = async (overrides: Partial<{
-  name: string;
-  summary: string;
-  description: string;
-  price: number;
-  stock: number;
-  isHidden: boolean;
-  categoryName: string;
-  categorySlug: string;
-}> = {}) => {
+export const seedCategoryAndProduct = async (
+  overrides: Partial<{
+    name: string;
+    summary: string;
+    description: string;
+    price: number;
+    stock: number;
+    isHidden: boolean;
+    categoryName: string;
+    categorySlug: string;
+  }> = {},
+) => {
   const { category } = await seedCategory({
     name: overrides.categoryName,
     slug: overrides.categorySlug,
@@ -199,9 +207,14 @@ export const seedOrder = async (
   }> = {},
 ) => {
   // Load address for snapshot
-  const address = await prisma.address.findUniqueOrThrow({ where: { id: addressId } });
+  const address = await prisma.address.findUniqueOrThrow({
+    where: { id: addressId },
+  });
 
-  const subtotal = items.reduce((sum, i) => sum + i.productPrice * i.quantity, 0);
+  const subtotal = items.reduce(
+    (sum, i) => sum + i.productPrice * i.quantity,
+    0,
+  );
   const shippingFee = 0;
   const total = subtotal + shippingFee;
 
@@ -271,4 +284,23 @@ export const seedReview = async (
   });
 
   return { review };
+};
+
+export const seedOrderForReview = async () => {
+  const { user, token } = await seedUser();
+  const { product } = await seedCategoryAndProduct();
+  const { address } = await seedAddress(user.id);
+
+  const orderItems = [
+    {
+      productId: product.id,
+      productName: product.name,
+      productPrice: 99999,
+      quantity: 1,
+    },
+  ];
+
+  await seedOrder(user.id, address.id, orderItems, { status: "DELIVERED" });
+
+  return { user, token, product };
 };

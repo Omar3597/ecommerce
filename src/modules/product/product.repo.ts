@@ -152,7 +152,9 @@ export class ProductRepo {
           ? {}
           : { isHidden: false, category: { isHidden: false } }),
       },
-      select: productDetailsSelect,
+      select: includeHidden
+        ? { ...productDetailsSelect, isHidden: true }
+        : productDetailsSelect,
     });
   }
 }

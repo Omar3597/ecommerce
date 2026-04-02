@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
 import app from "../../src/app";
-import { resetDatabase, seedUser, seedCategoryAndProduct } from "../utils/testHelpers";
+import {
+  resetDatabase,
+  seedUser,
+  seedCategoryAndProduct,
+} from "../utils/testHelpers";
 import { Role } from "@prisma/client";
 
 describe("Product Integration Tests", () => {
@@ -22,7 +26,7 @@ describe("Product Integration Tests", () => {
       expect(response.body.status).toBe("success");
       expect(response.body.pagination).toBeDefined();
       expect(response.body.pagination).toHaveProperty("totalItems");
-      expect(response.body.pagination.totalItems).toBeGreaterThanOrEqual(2);
+      expect(response.body.pagination.totalItems).toBe(2);
       expect(Array.isArray(response.body.data.products)).toBe(true);
     });
   });
@@ -31,11 +35,11 @@ describe("Product Integration Tests", () => {
 
   describe("GET /api/v1/products/:productId", () => {
     it("should fetch a specific product by ID", async () => {
-      const { product } = await seedCategoryAndProduct({ name: "Seeded Product 1" });
+      const { product } = await seedCategoryAndProduct({
+        name: "Seeded Product 1",
+      });
 
-      const response = await request(app).get(
-        `/api/v1/products/${product.id}`,
-      );
+      const response = await request(app).get(`/api/v1/products/${product.id}`);
 
       expect(response.status).toBe(200);
       expect(response.body.status).toBe("success");
@@ -53,6 +57,69 @@ describe("Product Integration Tests", () => {
       const fakeUuid = "00000000-0000-0000-0000-000000000000";
       const response = await request(app).get(`/api/v1/products/${fakeUuid}`);
       expect(response.status).toBe(404);
+    });
+  });
+
+  // ─── GET /admin/products ──────────────────────────────────────────────────
+
+  describe("GET /api/v1/admin/products", () => {
+    it("should fetch a list of products including hidden ones for ADMIN", async () => {
+      const { token } = await seedUser({ role: Role.ADMIN });
+      await seedCategoryAndProduct({
+        name: "Visible Product",
+        isHidden: false,
+      });
+      await seedCategoryAndProduct({ name: "Hidden Product", isHidden: true });
+
+      const response = await request(app)
+        .get("/api/v1/admin/products")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+      expect(response.body.pagination.totalItems).toBe(2);
+      expect(response.body.data.products[0]).toHaveProperty("isHidden");
+    });
+
+    it("should fail for regular USER", async () => {
+      const { token } = await seedUser({ role: Role.USER });
+      const response = await request(app)
+        .get("/api/v1/admin/products")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(403);
+    });
+  });
+
+  // ─── GET /admin/products/:productId ───────────────────────────────────────
+
+  describe("GET /api/v1/admin/products/:productId", () => {
+    it("should fetch a specific product including isHidden status for ADMIN", async () => {
+      const { token } = await seedUser({ role: Role.ADMIN });
+      const { product } = await seedCategoryAndProduct({
+        name: "Admin Product",
+        isHidden: true,
+      });
+
+      const response = await request(app)
+        .get(`/api/v1/admin/products/${product.id}`)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+      expect(response.body.data.product.id).toBe(product.id);
+      expect(response.body.data.product).toHaveProperty("isHidden", true);
+    });
+
+    it("should fail for regular USER", async () => {
+      const { token } = await seedUser({ role: Role.USER });
+      const { product } = await seedCategoryAndProduct();
+
+      const response = await request(app)
+        .get(`/api/v1/admin/products/${product.id}`)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(403);
     });
   });
 

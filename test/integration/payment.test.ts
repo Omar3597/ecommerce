@@ -12,22 +12,23 @@ import {
 
 // Mock Stripe entirely so we don't hit the real API
 vi.mock("stripe", () => {
-  return {
-    default: vi.fn().mockImplementation(() => ({
-      checkout: {
-        sessions: {
-          create: vi.fn().mockResolvedValue({
-            id: "cs_test_mock123",
-            payment_status: "unpaid",
-          }),
-        },
+  class StripeMock {
+    checkout = {
+      sessions: {
+        create: vi.fn().mockResolvedValue({
+          id: "cs_test_mock123",
+          payment_status: "unpaid",
+        }),
       },
-      webhooks: {
-        constructEvent: vi.fn().mockImplementation((payload, signature, _secret) => {
+    };
+    webhooks = {
+      constructEvent: vi
+        .fn()
+        .mockImplementation((_payload, signature, _secret) => {
           if (signature === "invalid-signature") {
             throw new Error("Invalid Stripe webhook signature");
           }
-          // Default valid event
+
           return {
             type: "checkout.session.completed",
             data: {
@@ -35,15 +36,19 @@ vi.mock("stripe", () => {
                 id: "cs_test_mock123",
                 payment_status: "paid",
                 metadata: {
-                  orderId: JSON.parse(payload.toString()).data?.object?.metadata?.orderId || "mocked-order-id",
+                  orderId: null,
                   userId: "mocked-user-id",
                 },
               },
             },
           };
         }),
-      },
-    })),
+    };
+  }
+
+  return {
+    default: StripeMock,
+    Stripe: StripeMock,
   };
 });
 
@@ -52,10 +57,6 @@ describe("Payment Integration Tests", () => {
     await resetDatabase();
   });
 
-  /**
-   * Seeds a complete order chain for payment testing.
-   * Returns user, token, and orderId.
-   */
   const seedPaymentPrerequisites = async () => {
     const { user, token } = await seedUser();
     const { address } = await seedAddress(user.id);
@@ -89,7 +90,9 @@ describe("Payment Integration Tests", () => {
       expect(response.body.data.sessionId).toBe("cs_test_mock123");
 
       // Verify the transactionId was written to the DB
-      const dbOrder = await prisma.order.findUnique({ where: { id: order.id } });
+      const dbOrder = await prisma.order.findUnique({
+        where: { id: order.id },
+      });
       expect(dbOrder?.transactionId).toBe("cs_test_mock123");
     });
 
@@ -97,7 +100,7 @@ describe("Payment Integration Tests", () => {
       const { token } = await seedUser();
 
       const response = await request(app)
-        .post("/api/v1/orders/11111111-1111-1111-1111-111111111111/payment")
+        .post("/api/v1/orders/00000000-0000-0000-0000-000000000000/payment")
         .set("Authorization", `Bearer ${token}`)
         .send();
 
@@ -106,7 +109,7 @@ describe("Payment Integration Tests", () => {
 
     it("should fail when unauthorized", async () => {
       const response = await request(app)
-        .post("/api/v1/orders/11111111-1111-1111-1111-111111111111/payment")
+        .post("/api/v1/orders/00000000-0000-0000-0000-000000000000/payment")
         .send();
 
       expect(response.status).toBe(401);
@@ -149,7 +152,9 @@ describe("Payment Integration Tests", () => {
       expect(response.status).toBe(200);
 
       // Verify DB Order state changed to PAID
-      const dbOrder = await prisma.order.findUnique({ where: { id: order.id } });
+      const dbOrder = await prisma.order.findUnique({
+        where: { id: order.id },
+      });
       expect(dbOrder?.status).toBe("PAID");
     });
 

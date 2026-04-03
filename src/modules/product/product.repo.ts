@@ -134,14 +134,7 @@ export class ProductRepo {
   }
 
   public deleteProductAndReviews(productId: string) {
-    return prisma.$transaction([
-      prisma.review.deleteMany({
-        where: { productId },
-      }),
-      prisma.product.deleteMany({
-        where: { id: productId },
-      }),
-    ]);
+    return prisma.product.delete({ where: { id: productId } });
   }
 
   public findProductDetailsById(productId: string, includeHidden = false) {

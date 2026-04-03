@@ -17,7 +17,7 @@ meRouter.get("/", userController.getMe);
 meRouter.patch("/profile", userController.updateProfile);
 meRouter.patch("/password", userController.updatePassword);
 meRouter.post("/email-change", userController.requestEmailChange);
-meRouter.get("/email-change/verify/:token", userController.verifyEmailChange);
+meRouter.post("/email-change/verify/:token", userController.verifyEmailChange);
 
 router.use("/me", meRouter);
 

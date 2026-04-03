@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
+import crypto from "crypto";
+import { TokenType } from "@prisma/client";
+import { prisma } from "../../src/lib/prisma";
 import app from "../../src/app";
 import { resetDatabase, seedUser } from "../utils/testHelpers";
 
@@ -37,7 +40,7 @@ describe("User Integration Tests", () => {
         .get("/api/v1/users/me")
         .set("Authorization", `Bearer ${token}`);
 
-      expect([200, 403, 401]).toContain(response.status);
+      expect(response.status).toBe(401);
     });
   });
 
@@ -80,6 +83,23 @@ describe("User Integration Tests", () => {
   // ─── PATCH /users/me/password ──────────────────────────────────────────────
 
   describe("PATCH /api/v1/users/me/password", () => {
+    it("should successfully change the password", async () => {
+      const { token, password } = await seedUser();
+      const newPasswordStr = "StrongPassword234!";
+
+      const response = await request(app)
+        .patch("/api/v1/users/me/password")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          currentPassword: password,
+          newPassword: newPasswordStr,
+          newPasswordConfirm: newPasswordStr,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+    });
+
     it("should fail validation if current and new password are the same", async () => {
       const { token, password } = await seedUser();
 
@@ -122,24 +142,7 @@ describe("User Integration Tests", () => {
           newPasswordConfirm: "StrongPassword234!",
         });
 
-      expect([400, 401]).toContain(response.status);
-    });
-
-    it("should successfully change the password", async () => {
-      const { token, password } = await seedUser();
-      const newPasswordStr = "StrongPassword234!";
-
-      const response = await request(app)
-        .patch("/api/v1/users/me/password")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          currentPassword: password,
-          newPassword: newPasswordStr,
-          newPasswordConfirm: newPasswordStr,
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body.status).toBe("success");
+      expect(response.status).toBe(401);
     });
   });
 
@@ -186,10 +189,41 @@ describe("User Integration Tests", () => {
       const fakeToken = "a".repeat(64);
 
       const response = await request(app)
-        .get(`/api/v1/users/me/email-change/verify/${fakeToken}`)
+        .post(`/api/v1/users/me/email-change/verify/${fakeToken}`)
         .set("Authorization", `Bearer ${token}`);
 
-      expect([400, 404]).toContain(response.status);
+      expect(response.status).toBe(400);
+    });
+
+    it("should verify email change with a valid token", async () => {
+      const { user, token } = await seedUser();
+
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const hashedToken = crypto
+        .createHash("sha256")
+        .update(rawToken)
+        .digest("hex");
+
+      await prisma.$transaction([
+        prisma.shortToken.create({
+          data: {
+            userId: user.id,
+            token: hashedToken,
+            type: TokenType.EMAIL_CHANGE,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          },
+        }),
+        prisma.user.update({
+          where: { id: user.id },
+          data: { pendingEmail: `new-email-${Date.now()}@example.com` },
+        }),
+      ]);
+
+      const response = await request(app)
+        .post(`/api/v1/users/me/email-change/verify/${rawToken}`)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
     });
   });
 });

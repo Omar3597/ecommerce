@@ -25,7 +25,7 @@ export class UserController {
 
     res.status(200).json({
       status: "success",
-      data: toPublicUser(user),
+      data: { user: toPublicUser(user) },
     });
   });
 
@@ -34,7 +34,7 @@ export class UserController {
 
     res.status(200).json({
       status: "success",
-      data: toPublicUser(req.user),
+      data: { user: toPublicUser(req.user) },
     });
   });
 

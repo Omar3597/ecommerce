@@ -96,8 +96,9 @@ model Cart {
 
   //relations
 
-  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items CartItem[]
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  updatedAt DateTime   @updatedAt
 
   @@index([userId])
   @@map("carts")
@@ -241,7 +242,7 @@ model Review {
   userId    String
   productId String
 
-  user    User    @relation(fields: [userId], references: [id])
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())

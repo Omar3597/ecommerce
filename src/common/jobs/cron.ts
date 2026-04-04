@@ -1,5 +1,11 @@
-import { orderExpirationJob } from "./orderExpiration.job";
+import { cleanupExpiredOrders } from "./handlers/cleanupOrders";
+import { cleanupExpiredTokens } from "./handlers/cleanupTokens";
+import { cleanupStaleCarts } from "./handlers/cleanupCarts";
+import { cleanupUnverifiedUsers } from "./handlers/cleanupUsers";
 
 export const initCronJobs = () => {
-  orderExpirationJob();
+  cleanupExpiredOrders();
+  cleanupExpiredTokens();
+  cleanupStaleCarts();
+  cleanupUnverifiedUsers();
 };

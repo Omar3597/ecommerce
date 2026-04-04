@@ -38,11 +38,10 @@ export class ProductService {
   }
 
   async deleteProduct(productId: string) {
-    const [, deletedProduct] = await this.productRepo.deleteProductAndReviews(
-      productId,
-    );
+    const deletedProduct =
+      await this.productRepo.deleteProductAndReviews(productId);
 
-    if (deletedProduct.count === 0) {
+    if (!deletedProduct) {
       throw new AppError(404, "Product is not found");
     }
   }

@@ -1,7 +1,7 @@
 import cron from "node-cron";
-import { prisma } from "../../lib/prisma";
+import { prisma } from "../../../lib/prisma";
 
-export const orderExpirationJob = () => {
+export const cleanupExpiredOrders = () => {
   cron.schedule("*/5 * * * *", async () => {
     try {
       const expiredOrders = await prisma.order.findMany({

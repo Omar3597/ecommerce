@@ -11,36 +11,30 @@ type PermissionMap = {
 
 export const permissions: PermissionMap = {
   product: {
-    read: "*",
+    read: [ROLES.ADMIN, ROLES.MANAGER],
     create: [ROLES.ADMIN, ROLES.MANAGER],
     update: [ROLES.ADMIN, ROLES.MANAGER],
     delete: [ROLES.ADMIN],
   },
 
-  review: {
-    read: "*",
-    create: [ROLES.USER, ROLES.ADMIN],
-    update: [ROLES.USER, ROLES.ADMIN],
+  category: {
+    read: [ROLES.ADMIN, ROLES.MANAGER],
+    create: [ROLES.ADMIN, ROLES.MANAGER],
+    update: [ROLES.ADMIN, ROLES.MANAGER],
     delete: [ROLES.ADMIN],
   },
 
   user: {
-    read: [ROLES.ADMIN],
+    read: [ROLES.ADMIN, ROLES.MANAGER],
+    create: "*", // مفتوحة للـ Registration
     update: [ROLES.ADMIN],
     delete: [ROLES.ADMIN],
   },
 
   order: {
-    read: [ROLES.USER, ROLES.ADMIN],
-    create: [ROLES.USER],
-    update: [ROLES.ADMIN],
-    delete: [ROLES.ADMIN],
-  },
-
-  category: {
-    read: "*",
-    create: [ROLES.ADMIN],
-    update: [ROLES.ADMIN],
+    read: [ROLES.ADMIN, ROLES.MANAGER],
+    create: [ROLES.USER, ROLES.ADMIN],
+    update: [ROLES.ADMIN, ROLES.MANAGER],
     delete: [ROLES.ADMIN],
   },
 };

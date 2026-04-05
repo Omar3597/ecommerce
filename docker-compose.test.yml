@@ -1,8 +1,51 @@
+version: "3.8"
+
 services:
-  postgres:
+  postgres_test:
     image: postgres:15-alpine
     container_name: ecommerce_postgres_test
-    ports:
-      - "5433:5432"
-    env_file:
-      - .env.test
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret_test_password
+      - POSTGRES_DB=ecommerce_test
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ecommerce_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  app_test:
+    build:
+      context: .
+      target: development
+    container_name: ecommerce_app_test
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      postgres_test:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=test
+      - APP_PORT=3000
+      - DB_HOST=postgres_test
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=secret_test_password
+      - DB_NAME=ecommerce_test
+      - DATABASE_URL=postgresql://postgres:secret_test_password@postgres_test:5432/ecommerce_test
+      - BASE_URL=http://localhost:3000/api/v1
+      - JWT_SECRET=fake_test_jwt_secret_key_1234567890
+      - REFRESH_TOKEN_SECRET=fake_test_refresh_secret_key_0987654321
+      - MAIL_HOST=localhost
+      - MAIL_PORT=1025
+      - MAIL_USER=test_user
+      - MAIL_PASSWORD=test_password
+      - STRIPE_SECRET_KEY=sk_test_mockKeyForTestingPurposesOnly123
+      - STRIPE_WEBHOOK_SECRET=whsec_mockWebhookSecretForTesting456
+      - STRIPE_SUCCESS_URL=http://localhost:3000/checkout/success
+      - STRIPE_CANCEL_URL=http://localhost:3000/checkout/cancel
+      - MAX_CART_QUANTITY=10
+      - MAX_ACTIVE_SESSIONS=5
+    command: >
+      sh -c "npx prisma migrate deploy && npm run test:run"

@@ -70,13 +70,28 @@ model Product {
   updatedAt    DateTime @updatedAt
 
   //relations
-  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  cartItems  CartItem[]
-  reviews    Review[]
-  categoryId String
-  orderItems OrderItem[]
+  category      Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  cartItems     CartItem[]
+  reviews       Review[]
+  categoryId    String
+  orderItems    OrderItem[]
+  productImages ProductImage[]
 
   @@map("products")
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  url       String
+  publicId  String   @unique
+  sortOrder Int      @default(0)
+  productId String
+  createdAt DateTime @default(now())
+
+  // relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, sortOrder])
 }
 
 model Category {
@@ -95,7 +110,6 @@ model Cart {
   userId String @unique
 
   //relations
-
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   items     CartItem[]
   updatedAt DateTime   @updatedAt

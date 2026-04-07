@@ -37,14 +37,6 @@ services:
       - BASE_URL=http://localhost:3000/api/v1
       - JWT_SECRET=fake_test_jwt_secret_key_1234567890
       - REFRESH_TOKEN_SECRET=fake_test_refresh_secret_key_0987654321
-      - MAIL_HOST=localhost
-      - MAIL_PORT=1025
-      - MAIL_USER=test_user
-      - MAIL_PASSWORD=test_password
-      - STRIPE_SECRET_KEY=sk_test_mockKeyForTestingPurposesOnly123
-      - STRIPE_WEBHOOK_SECRET=whsec_mockWebhookSecretForTesting456
-      - STRIPE_SUCCESS_URL=http://localhost:3000/checkout/success
-      - STRIPE_CANCEL_URL=http://localhost:3000/checkout/cancel
       - MAX_CART_QUANTITY=10
       - MAX_ACTIVE_SESSIONS=5
     command: >

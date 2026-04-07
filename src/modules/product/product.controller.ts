@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import { ProductService } from "./product.service";
 import { catchAsync } from "../../common/middlewares/catchAsync";
+import { StorageService } from "../../common/services/cloudinary.service";
+import AppError from "../../common/utils/appError";
 import {
   createProductSchema,
   deleteProductSchema,
@@ -112,4 +114,27 @@ export class ProductController {
       });
     },
   );
+
+  public uploadImages = catchAsync(async (req: Request, res: Response) => {
+    const files = req.files as Express.Multer.File[] | undefined;
+
+    if (!files || files.length === 0) {
+      throw new AppError(400, "Please upload at least one image.");
+    }
+
+    if (files.length > 3) {
+      throw new AppError(400, "You can upload a maximum of 3 images at a time.");
+    }
+
+    const buffers = files.map((f) => f.buffer);
+    const results = await StorageService.bulkUploadImages(buffers, "products");
+
+    res.status(200).json({
+      status: "success",
+      results: results.length,
+      data: {
+        images: results.map(({ url, publicId }) => ({ url, publicId })),
+      },
+    });
+  });
 }

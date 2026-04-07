@@ -2,14 +2,30 @@ import express from "express";
 import { authorize } from "../../../common/middlewares/authorize";
 import { ProductService } from "../../product/product.service";
 import { ProductController } from "../../product/product.controller";
+import { upload } from "../../../common/middlewares/upload";
 
 const router = express.Router({ mergeParams: true });
 
 const productService = new ProductService();
 const productController = new ProductController(productService);
 
-router.get("/", authorize("product", "read"), productController.getAllProductsAdmin);
-router.get("/:productId", authorize("product", "read"), productController.getOneProductAdmin);
+router.get(
+  "/",
+  authorize("product", "read"),
+  productController.getAllProductsAdmin,
+);
+router.get(
+  "/:productId",
+  authorize("product", "read"),
+  productController.getOneProductAdmin,
+);
+
+router.post(
+  "/upload-images",
+  authorize("product", "create"),
+  upload.array("image"),
+  productController.uploadImages,
+);
 
 router.post(
   "/",

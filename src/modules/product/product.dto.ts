@@ -36,19 +36,21 @@ export function toPaginatedPublicResponse(
   maxCartQty: number,
 ) {
   return toPaginatedResponse(p, (product: any) => {
-      const ratingAvgNum = Number(product.ratingAvg);
-      const ratingAvg = Number.isFinite(ratingAvgNum) ? ratingAvgNum : null;
+    const ratingAvgNum = Number(product.ratingAvg);
+    const ratingAvg = Number.isFinite(ratingAvgNum) ? ratingAvgNum : null;
+    const image: string | null = product.productImages?.[0]?.url ?? null;
 
-      return {
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        summary: product.summary,
-        stock: Math.min(product.stock, maxCartQty),
-        ratingAvg,
-        ratingCount: product.ratingCount,
-      };
-    });
+    return {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      summary: product.summary,
+      stock: Math.min(product.stock, maxCartQty),
+      ratingAvg,
+      ratingCount: product.ratingCount,
+      image,
+    };
+  });
 }
 
 export function toPaginatedAdminResponse(p: PaginatedProducts) {
@@ -61,6 +63,7 @@ export function toPaginatedAdminResponse(p: PaginatedProducts) {
     stock: product.stock,
     isHidden: product.isHidden,
     categoryId: product.categoryId,
+    image: product.productImages?.[0]?.url ?? null,
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
   }));
@@ -77,6 +80,7 @@ export function toPublicProductDetails(p: any, maxCartQty: number) {
     ratingAvg: Number(p.ratingAvg) ?? p.ratingAvg,
     ratingCount: p.ratingCount,
     category: p.category,
+    images: p.productImages ?? [],
     reviews: p.reviews,
   };
 }

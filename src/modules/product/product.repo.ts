@@ -2,7 +2,7 @@ import { prisma } from "../../lib/prisma";
 import { buildPrismaArgs } from "../../common/query/query.engine";
 import { productQuery } from "./product.query";
 import { CreateProductInput, UpdateProductInput } from "./product.validator";
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 const productAdminSelect: Prisma.ProductSelect = {
   id: true,
@@ -14,6 +14,10 @@ const productAdminSelect: Prisma.ProductSelect = {
   isHidden: true,
   category: {
     select: { id: true, name: true, slug: true },
+  },
+  productImages: {
+    select: { id: true, url: true, publicId: true, sortOrder: true },
+    orderBy: { sortOrder: "asc" },
   },
   createdAt: true,
   updatedAt: true,
@@ -29,6 +33,10 @@ const productDetailsSelect: Prisma.ProductSelect = {
   price: true,
   stock: true,
   category: { select: { id: true, name: true } },
+  productImages: {
+    select: { id: true, url: true, sortOrder: true },
+    orderBy: { sortOrder: "asc" },
+  },
   reviews: {
     select: {
       id: true,
@@ -50,18 +58,33 @@ export class ProductRepo {
     });
   }
 
-  public createProduct(data: CreateProductInput) {
-    return prisma.product.create({
-      data: {
-        name: data.name,
-        summary: data.summary,
-        description: data.description,
-        price: data.price,
-        stock: data.stock,
-        categoryId: data.categoryId,
-        isHidden: data.isHidden ?? false,
-      },
-      select: productAdminSelect,
+  public async createProductWithImages(data: CreateProductInput) {
+    return prisma.$transaction(async (tx) => {
+      const product = await tx.product.create({
+        data: {
+          name: data.name,
+          summary: data.summary,
+          description: data.description,
+          price: data.price,
+          stock: data.stock,
+          categoryId: data.categoryId,
+          isHidden: data.isHidden ?? false,
+        },
+      });
+
+      await tx.productImage.createMany({
+        data: data.images.map((img) => ({
+          url: img.url,
+          publicId: img.publicId,
+          sortOrder: img.sortOrder,
+          productId: product.id,
+        })),
+      });
+
+      return tx.product.findUniqueOrThrow({
+        where: { id: product.id },
+        select: productAdminSelect,
+      });
     });
   }
 
@@ -91,6 +114,21 @@ export class ProductRepo {
     const finalWhere: Prisma.ProductWhereInput = args.where
       ? { AND: [args.where, extraWhere] }
       : extraWhere;
+
+    const productImagesQuery = {
+      where: { sortOrder: 0 },
+      select: { url: true },
+      take: 1,
+    };
+
+    if (args.select) {
+      (args.select as any).productImages = productImagesQuery;
+    } else {
+      (args as any).include = {
+        ...(args as any).include,
+        productImages: productImagesQuery,
+      };
+    }
 
     const [totalItems, products] = await prisma.$transaction([
       prisma.product.count({ where: finalWhere }),
@@ -133,7 +171,21 @@ export class ProductRepo {
     });
   }
 
-  public deleteProductAndReviews(productId: string) {
+  public findProductImagesByProductId(productId: string) {
+    return prisma.productImage.findMany({
+      where: { productId },
+      select: { id: true, publicId: true },
+    });
+  }
+
+  public deleteProductImages(imageIds: string[]) {
+    if (!imageIds.length) return Promise.resolve({ count: 0 });
+    return prisma.productImage.deleteMany({
+      where: { id: { in: imageIds } },
+    });
+  }
+
+  public deleteProduct(productId: string) {
     return prisma.product.delete({ where: { id: productId } });
   }
 

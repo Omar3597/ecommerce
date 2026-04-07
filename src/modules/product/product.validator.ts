@@ -36,6 +36,17 @@ const stockSchema = z
   .min(0, "Stock must be greater than or equal to 0")
   .max(99_999, "Stock is too large");
 
+const productImageSchema = z.object({
+  url: z.string().url("Image url must be a valid URL"),
+  publicId: z.string().min(1, "Image publicId is required"),
+  sortOrder: z
+    .number("sortOrder must be a number")
+    .int("sortOrder must be an integer")
+    .min(0, "sortOrder must be 0 or greater"),
+});
+
+export type ProductImageInput = z.infer<typeof productImageSchema>;
+
 export const createProductSchema = z.object({
   body: z
     .object({
@@ -46,6 +57,14 @@ export const createProductSchema = z.object({
       stock: stockSchema.default(1),
       categoryId: z.uuid("Invalid category ID"),
       isHidden: z.boolean("isHidden must be a boolean").optional(),
+      images: z
+        .array(productImageSchema)
+        .min(1, "At least one image is required")
+        .max(3, "A product can have at most 3 images")
+        .refine(
+          (imgs) => new Set(imgs.map((i) => i.sortOrder)).size === imgs.length,
+          { message: "Each image must have a unique sortOrder" },
+        ),
     })
     .strict(),
 });

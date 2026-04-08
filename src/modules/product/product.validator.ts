@@ -36,6 +36,23 @@ const stockSchema = z
   .min(0, "Stock must be greater than or equal to 0")
   .max(99_999, "Stock is too large");
 
+const productImageSchema = z.object({
+  url: z.string().url("Image url must be a valid URL"),
+  publicId: z.string().min(1, "Image publicId is required"),
+  sortOrder: z
+    .number("sortOrder must be a number")
+    .int("sortOrder must be an integer")
+    .min(0, "sortOrder must be 0 or greater"),
+});
+
+const productImagesArraySchema = z
+  .array(productImageSchema)
+  .max(3, "A product can have at most 3 images")
+  .refine(
+    (imgs) => new Set(imgs.map((i) => i.sortOrder)).size === imgs.length,
+    { message: "Each image must have a unique sortOrder" },
+  );
+
 export const createProductSchema = z.object({
   body: z
     .object({
@@ -46,6 +63,7 @@ export const createProductSchema = z.object({
       stock: stockSchema.default(1),
       categoryId: z.uuid("Invalid category ID"),
       isHidden: z.boolean("isHidden must be a boolean").optional(),
+      images: productImagesArraySchema.min(1, "At least one image is required"),
     })
     .strict(),
 });
@@ -59,6 +77,7 @@ const updateProductBodySchema = z
     stock: stockSchema.optional(),
     isHidden: z.boolean("isHidden must be a boolean").optional(),
     categoryId: z.uuid("Invalid category ID").optional(),
+    images: productImagesArraySchema.optional(),
   })
   .strict()
   .refine((value) => Object.keys(value).length > 0, {
@@ -78,5 +97,12 @@ export const deleteProductSchema = z.object({
   }),
 });
 
+export const deleteImageSchema = z.object({
+  params: z.object({
+    publicId: z.string().min(1, "Public ID is required"),
+  }),
+});
+
+export type ProductImageInput = z.infer<typeof productImageSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>["body"];
 export type CreateProductInput = z.infer<typeof createProductSchema>["body"];

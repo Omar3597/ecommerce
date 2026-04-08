@@ -1,9 +1,5 @@
 import { Readable } from "node:stream";
-import {
-  v2 as cloudinary,
-  UploadApiResponse,
-  UploadApiErrorResponse,
-} from "cloudinary";
+import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from "cloudinary";
 import { getConfig } from "../../config/env";
 
 // ── Types ────────────────────────────────────────────────────────────────────

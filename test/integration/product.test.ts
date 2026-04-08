@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import request from "supertest";
 import app from "../../src/app";
 import {
@@ -7,10 +7,20 @@ import {
   seedCategoryAndProduct,
 } from "../utils/testHelpers";
 import { Role } from "@prisma/client";
+import { StorageService } from "../../src/common/services/cloudinary.service";
+
+vi.mock("../../src/common/services/cloudinary.service", () => ({
+  StorageService: {
+    bulkUploadImages: vi.fn(),
+    deleteImage: vi.fn(),
+    bulkDeleteImages: vi.fn(),
+  },
+}));
 
 describe("Product Integration Tests", () => {
   beforeEach(async () => {
     await resetDatabase();
+    vi.clearAllMocks();
   });
 
   // ─── GET /products ─────────────────────────────────────────────────────────
@@ -28,6 +38,11 @@ describe("Product Integration Tests", () => {
       expect(response.body.pagination).toHaveProperty("totalItems");
       expect(response.body.pagination.totalItems).toBe(2);
       expect(Array.isArray(response.body.data.products)).toBe(true);
+
+      const productA = response.body.data.products.find((p: any) => p.name === "Product A");
+      expect(productA).toHaveProperty("image");
+      expect(productA.image).toBe("https://example.com/default.png");
+      expect(productA).not.toHaveProperty("publicId");
     });
   });
 
@@ -46,6 +61,10 @@ describe("Product Integration Tests", () => {
       expect(response.body.data.product).toBeDefined();
       expect(response.body.data.product.id).toBe(product.id);
       expect(response.body.data.product.name).toBe("Seeded Product 1");
+      expect(response.body.data.product).toHaveProperty("images");
+      expect(Array.isArray(response.body.data.product.images)).toBe(true);
+      expect(response.body.data.product.images[0]).toHaveProperty("url", "https://example.com/default.png");
+      expect(response.body.data.product.images[0]).not.toHaveProperty("publicId");
     });
 
     it("should fail validation if productId is not a UUID", async () => {
@@ -140,6 +159,9 @@ describe("Product Integration Tests", () => {
           price: 200000,
           stock: 100,
           categoryId: category.id,
+          images: [
+            { url: "https://example.com/img1.jpg", publicId: "img1", sortOrder: 0 },
+          ],
         });
 
       expect(response.status).toBe(201);
@@ -171,6 +193,7 @@ describe("Product Integration Tests", () => {
         price: 200000,
         stock: 100,
         categoryId: category.id,
+        images: [{ url: "https://example.com/img2.jpg", publicId: "img2", sortOrder: 0 }],
       });
 
       expect(response.status).toBe(401);
@@ -189,7 +212,70 @@ describe("Product Integration Tests", () => {
           price: 2000,
           stock: 100,
           categoryId: category.id,
+          images: [{ url: "https://example.com/img3.jpg", publicId: "img3", sortOrder: 0 }],
         });
+
+      expect(response.status).toBe(403);
+    });
+  });
+
+  // ─── POST /admin/products/uploads/images ─────────────────────────────────────
+
+  describe("POST /api/v1/admin/products/uploads/images", () => {
+    it("should successfully upload images for ADMIN", async () => {
+      const { token } = await seedUser({ role: Role.ADMIN });
+      const buffer = Buffer.from("dummy content");
+
+      vi.mocked(StorageService.bulkUploadImages).mockResolvedValue([
+        { url: "https://fake.url/img.jpg", publicId: "fake_public_id" }
+      ]);
+
+      const response = await request(app)
+        .post("/api/v1/admin/products/uploads/images")
+        .set("Authorization", `Bearer ${token}`)
+        .attach("image", buffer, "test_image.jpg");
+
+      expect(response.status).toBe(200);
+      expect(response.body.status).toBe("success");
+      expect(response.body.data.images[0].url).toBe("https://fake.url/img.jpg");
+      expect(StorageService.bulkUploadImages).toHaveBeenCalledTimes(1);
+    });
+
+    it("should fail for regular USER", async () => {
+      const { token } = await seedUser({ role: Role.USER });
+      const buffer = Buffer.from("dummy content");
+
+      const response = await request(app)
+        .post("/api/v1/admin/products/uploads/images")
+        .set("Authorization", `Bearer ${token}`)
+        .attach("image", buffer, "test_image.jpg");
+
+      expect(response.status).toBe(403);
+    });
+  });
+
+  // ─── DELETE /admin/products/uploads/images/:publicId ────────────────────────
+
+  describe("DELETE /api/v1/admin/products/uploads/images/:publicId", () => {
+    it("should successfully delete an image for ADMIN", async () => {
+      const { token } = await seedUser({ role: Role.ADMIN });
+
+      vi.mocked(StorageService.deleteImage).mockResolvedValue(undefined);
+
+      const response = await request(app)
+        .delete("/api/v1/admin/products/uploads/images/fake_public_id")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(204);
+      expect(StorageService.deleteImage).toHaveBeenCalledWith("fake_public_id");
+    });
+
+    it("should fail for regular USER", async () => {
+      const { token } = await seedUser({ role: Role.USER });
+
+      const response = await request(app)
+        .delete("/api/v1/admin/products/uploads/images/fake_public_id")
+        .set("Authorization", `Bearer ${token}`);
 
       expect(response.status).toBe(403);
     });
@@ -244,6 +330,9 @@ describe("Product Integration Tests", () => {
     it("should successfully delete a product with ADMIN token", async () => {
       const { token } = await seedUser({ role: Role.ADMIN });
       const { product } = await seedCategoryAndProduct();
+      const publicId = product.productImages[0].publicId;
+
+      vi.mocked(StorageService.bulkDeleteImages).mockResolvedValue(undefined);
 
       const response = await request(app)
         .delete(`/api/v1/admin/products/${product.id}`)
@@ -256,6 +345,9 @@ describe("Product Integration Tests", () => {
         `/api/v1/products/${product.id}`,
       );
       expect(verifyResponse.status).toBe(404);
+
+      // Verify third-party deletion was called
+      expect(StorageService.bulkDeleteImages).toHaveBeenCalledWith([publicId]);
     });
 
     it("should fail with standard USER token", async () => {

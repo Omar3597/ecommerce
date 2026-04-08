@@ -108,12 +108,15 @@ export const seedCategoryAndProduct = async (
     isHidden: boolean;
     categoryName: string;
     categorySlug: string;
+    images: { url: string; publicId: string; sortOrder: number }[];
   }> = {},
 ) => {
   const { category } = await seedCategory({
     name: overrides.categoryName,
     slug: overrides.categorySlug,
   });
+
+  const uniqueSuffix = Date.now() + "-" + Math.random().toString(36).slice(2);
 
   const product = await prisma.product.create({
     data: {
@@ -124,7 +127,15 @@ export const seedCategoryAndProduct = async (
       stock: overrides.stock ?? 10,
       isHidden: overrides.isHidden ?? false,
       categoryId: category.id,
+      productImages: {
+        create: overrides.images || [
+          { url: "https://example.com/default.png", publicId: `default_id_${uniqueSuffix}`, sortOrder: 0 }
+        ]
+      }
     },
+    include: {
+      productImages: true
+    }
   });
 
   return { category, product };

@@ -21,10 +21,16 @@ router.get(
 );
 
 router.post(
-  "/upload-images",
+  "/uploads/images",
   authorize("product", "create"),
   upload.array("image"),
   productController.uploadImages,
+);
+
+router.delete(
+  "/uploads/images/:publicId",
+  authorize("product", "update"),
+  productController.deleteImage,
 );
 
 router.post(

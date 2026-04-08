@@ -5,6 +5,7 @@ import { StorageService } from "../../common/services/cloudinary.service";
 import AppError from "../../common/utils/appError";
 import {
   createProductSchema,
+  deleteImageSchema,
   deleteProductSchema,
   getProductSchema,
   updateProductSchema,
@@ -123,7 +124,10 @@ export class ProductController {
     }
 
     if (files.length > 3) {
-      throw new AppError(400, "You can upload a maximum of 3 images at a time.");
+      throw new AppError(
+        400,
+        "You can upload a maximum of 3 images at a time.",
+      );
     }
 
     const buffers = files.map((f) => f.buffer);
@@ -136,5 +140,14 @@ export class ProductController {
         images: results.map(({ url, publicId }) => ({ url, publicId })),
       },
     });
+  });
+
+  public deleteImage = catchAsync(async (req: Request, res: Response) => {
+    const validatedData = deleteImageSchema.parse(req);
+    const { publicId } = validatedData.params;
+
+    await StorageService.deleteImage(publicId);
+
+    res.status(204).send();
   });
 }

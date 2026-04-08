@@ -54,12 +54,20 @@ export const StorageService = {
 
     return new Promise<CloudinaryUploadResult>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: `ecommerce/${folderName}` },
-        (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
+        {
+          folder: `ecommerce/${folderName}`,
+          format: "webp",
+          transformation: [
+            { width: 1200, height: 1200, crop: "limit" },
+            { quality: "auto", fetch_format: "auto" },
+          ],
+        },
+        (
+          error: UploadApiErrorResponse | undefined,
+          result: UploadApiResponse | undefined,
+        ) => {
           if (error) {
-            return reject(
-              new CloudinaryError("Image upload failed", error),
-            );
+            return reject(new CloudinaryError("Image upload failed", error));
           }
           if (!result) {
             return reject(

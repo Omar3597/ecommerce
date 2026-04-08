@@ -59,32 +59,26 @@ export class ProductRepo {
   }
 
   public async createProductWithImages(data: CreateProductInput) {
-    return prisma.$transaction(async (tx) => {
-      const product = await tx.product.create({
-        data: {
-          name: data.name,
-          summary: data.summary,
-          description: data.description,
-          price: data.price,
-          stock: data.stock,
-          categoryId: data.categoryId,
-          isHidden: data.isHidden ?? false,
+    return prisma.product.create({
+      data: {
+        name: data.name,
+        summary: data.summary,
+        description: data.description,
+        price: data.price,
+        stock: data.stock,
+        categoryId: data.categoryId,
+        isHidden: data.isHidden ?? false,
+        productImages: {
+          createMany: {
+            data: data.images.map((img) => ({
+              url: img.url,
+              publicId: img.publicId,
+              sortOrder: img.sortOrder,
+            })),
+          },
         },
-      });
-
-      await tx.productImage.createMany({
-        data: data.images.map((img) => ({
-          url: img.url,
-          publicId: img.publicId,
-          sortOrder: img.sortOrder,
-          productId: product.id,
-        })),
-      });
-
-      return tx.product.findUniqueOrThrow({
-        where: { id: product.id },
-        select: productAdminSelect,
-      });
+      },
+      select: productAdminSelect,
     });
   }
 
@@ -166,6 +160,18 @@ export class ProductRepo {
         ...(data.stock !== undefined && { stock: data.stock }),
         ...(data.isHidden !== undefined && { isHidden: data.isHidden }),
         ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
+        ...(data.images !== undefined && {
+          productImages: {
+            deleteMany: {},
+            createMany: {
+              data: data.images.map((img) => ({
+                url: img.url,
+                publicId: img.publicId,
+                sortOrder: img.sortOrder,
+              })),
+            },
+          },
+        }),
       },
       select: productAdminSelect,
     });

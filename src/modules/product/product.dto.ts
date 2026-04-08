@@ -80,7 +80,10 @@ export function toPublicProductDetails(p: any, maxCartQty: number) {
     ratingAvg: Number(p.ratingAvg) ?? p.ratingAvg,
     ratingCount: p.ratingCount,
     category: p.category,
-    images: p.productImages ?? [],
+    images: (p.productImages ?? []).map((img: any) => ({
+      url: img.url,
+      sortOrder: img.sortOrder,
+    })),
     reviews: p.reviews,
   };
 }

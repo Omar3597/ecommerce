@@ -1,6 +1,7 @@
 import AppError from "../../common/utils/appError";
 import { CreateCategoryInput, UpdateCategoryInput } from "./category.validator";
 import { CategoryRepo } from "./category.repo";
+import baseLogger from "../../config/logger";
 
 const slugify = (value: string) =>
   value
@@ -11,6 +12,8 @@ const slugify = (value: string) =>
     .replace(/-{2,}/g, "-");
 
 export class CategoryService {
+  private logger = baseLogger.child({ module: "category" });
+
   constructor(private readonly categoryRepo: CategoryRepo) {}
 
   private async createUniqueSlug(baseSlug: string, excludedId?: string) {
@@ -29,7 +32,10 @@ export class CategoryService {
     }
   }
 
-  async createCategory(data: CreateCategoryInput) {
+  async createCategory(
+    data: CreateCategoryInput,
+    context: { userId: string; role: string },
+  ) {
     const baseSlug = slugify(data.slug ?? data.name);
 
     if (!baseSlug) {
@@ -38,11 +44,23 @@ export class CategoryService {
 
     const slug = await this.createUniqueSlug(baseSlug);
 
-    return this.categoryRepo.createCategory(
+    const category = await this.categoryRepo.createCategory(
       data.name,
       slug,
       data.isHidden ?? false,
     );
+
+    this.logger.info(
+      {
+        action: "CREATE_CATEGORY",
+        userId: context.userId,
+        role: context.role,
+        entityId: category.id,
+      },
+      "Category created",
+    );
+
+    return category;
   }
 
   async getAllCategories(includeHidden = false) {
@@ -62,7 +80,11 @@ export class CategoryService {
     return category;
   }
 
-  async updateCategory(categoryId: string, data: UpdateCategoryInput) {
+  async updateCategory(
+    categoryId: string,
+    data: UpdateCategoryInput,
+    context: { userId: string; role: string },
+  ) {
     const existingCategory =
       await this.categoryRepo.findCategoryForUpdate(categoryId);
 
@@ -81,14 +103,29 @@ export class CategoryService {
       nextSlug = await this.createUniqueSlug(baseSlug, categoryId);
     }
 
-    return this.categoryRepo.updateCategory(categoryId, {
+    const category = await this.categoryRepo.updateCategory(categoryId, {
       ...(data.name !== undefined && { name: data.name }),
       ...(data.isHidden !== undefined && { isHidden: data.isHidden }),
       ...(nextSlug !== undefined && { slug: nextSlug }),
     });
+
+    this.logger.info(
+      {
+        action: "UPDATE_CATEGORY",
+        userId: context.userId,
+        role: context.role,
+        entityId: category.id,
+      },
+      "Admin updated category",
+    );
+
+    return category;
   }
 
-  async deleteCategory(categoryId: string) {
+  async deleteCategory(
+    categoryId: string,
+    context: { userId: string; role: string },
+  ) {
     const category = await this.categoryRepo.findCategoryForDelete(categoryId);
 
     if (!category) {
@@ -96,5 +133,15 @@ export class CategoryService {
     }
 
     await this.categoryRepo.deleteCategory(categoryId);
+
+    this.logger.warn(
+      {
+        action: "DELETE_CATEGORY",
+        userId: context.userId,
+        role: context.role,
+        entityId: categoryId,
+      },
+      "Category deleted",
+    );
   }
 }

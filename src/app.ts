@@ -1,6 +1,8 @@
 import express from "express";
-import morgan from "morgan";
 import cors from "cors";
+import crypto from "crypto";
+import pinoHttp from "pino-http";
+import logger, { requestContext } from "./config/logger";
 import hpp from "hpp";
 import cookieParser from "cookie-parser";
 import { errHandler } from "./common/errors/errHandler";
@@ -20,6 +22,44 @@ import categoryRouter from "./modules/category/category.routes";
 
 const app = express();
 
+const httpLogger = pinoHttp({
+  logger,
+  customLogLevel: function (req, res, err) {
+    return "info";
+  },
+  customSuccessMessage: function (req, res) {
+    return `[HTTP Traffic] ${req.method} ${req.url} - Status: ${res.statusCode}`;
+  },
+  customErrorMessage: function (req, res, err) {
+    return `[HTTP Traffic] ${req.method} ${req.url} - Status: ${res.statusCode}`;
+  },
+  serializers: {
+    req: (req) => {
+      return {
+        method: req.method,
+        url: req.url,
+        headers: req.headers,
+        query: req.query,
+        params: req.params,
+      };
+    },
+    res: (res) => {
+      return {
+        statusCode: res.statusCode,
+        headers: res.getHeaders(),
+      };
+    },
+  },
+});
+
+app.use((req, res, next) => {
+  const requestId = crypto.randomUUID();
+  req.id = requestId;
+  requestContext.run({ requestId }, () => {
+    httpLogger(req, res, next);
+  });
+});
+
 app.use(
   cors({
     origin: "http://localhost:3000",
@@ -38,12 +78,6 @@ app.post(
 app.use(express.json());
 
 app.use(hpp());
-
-const { env } = getConfig();
-
-// if (env == "development") {
-//   app.use(morgan("dev"));
-// }
 
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/users", protect, userRouter);

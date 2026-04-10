@@ -2,11 +2,15 @@ import AppError from "../../common/utils/appError";
 import { getConfig } from "../../config/env";
 import Stripe from "stripe";
 import { PaymentRepo } from "./payment.repo";
+import baseLogger from "../../config/logger";
+import { log } from "node:console";
 
 const config = getConfig();
 const stripe = new Stripe(config.STRIPE_SECRET_KEY);
 
 export class PaymentService {
+  private logger = baseLogger.child({ module: "payment" });
+
   constructor(private readonly paymentRepo: PaymentRepo = new PaymentRepo()) {}
 
   async createCheckoutSessionForOrder(userId: string, orderId: string) {
@@ -29,6 +33,17 @@ export class PaymentService {
 
     await this.paymentRepo.updateOrderTransactionId(order.id, session.id);
 
+    this.logger.info(
+      {
+        action: "PAYMENT_SESSION_CREATED",
+        service: "stripe",
+        sessionId: session.id,
+        orderId: order.id,
+        userId,
+      },
+      "Payment session created",
+    );
+
     return session.id;
   }
 
@@ -40,6 +55,7 @@ export class PaymentService {
         config.STRIPE_WEBHOOK_SECRET,
       );
     } catch {
+      this.logger.warn("Invalid Stripe webhook signature");
       throw new AppError(400, "Invalid Stripe webhook signature");
     }
   }
@@ -50,6 +66,18 @@ export class PaymentService {
       case "checkout.session.async_payment_succeeded": {
         const session = event.data.object as Stripe.Checkout.Session;
         await this.markOrderAsPaid(session);
+
+        this.logger.info(
+          {
+            action: "PAYMENT_SUCCESS",
+            service: "stripe",
+            eventId: event.id,
+            sessionId: session.id,
+            orderId: session.metadata?.orderId,
+            userId: session.metadata?.userId,
+          },
+          "Payment successful",
+        );
         break;
       }
       default:
@@ -117,15 +145,18 @@ export class PaymentService {
     successUrl,
     cancelUrl,
     lineItems,
+    context,
   }: {
     orderId: string;
     userId: string;
     successUrl: string;
     cancelUrl: string;
     lineItems: Stripe.Checkout.SessionCreateParams.LineItem[];
+    context?: { requestId?: string };
   }) {
+    const start = performance.now();
     try {
-      return await stripe.checkout.sessions.create({
+      const session = await stripe.checkout.sessions.create({
         mode: "payment",
         success_url: successUrl,
         cancel_url: cancelUrl,
@@ -136,7 +167,32 @@ export class PaymentService {
         },
         line_items: lineItems,
       });
+
+      this.logger.info(
+        {
+          action: "THIRD_PARTY_CALL",
+          service: "stripe",
+          duration: performance.now() - start,
+          requestId: context?.requestId,
+          userId,
+        },
+        "Third-party success",
+      );
+
+      return session;
     } catch (err) {
+      this.logger.error(
+        {
+          action: "THIRD_PARTY_CALL_FAILED",
+          service: "stripe",
+          duration: performance.now() - start,
+          requestId: context?.requestId,
+          userId,
+          err,
+        },
+        "Third-party failed",
+      );
+
       if (err instanceof Stripe.errors.StripeError && err.message) {
         throw new AppError(502, err.message);
       }

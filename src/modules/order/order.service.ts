@@ -1,5 +1,6 @@
 import AppError from "../../common/utils/appError";
 import { OrderRepo } from "./order.repo";
+import baseLogger from "../../config/logger";
 
 type ProductForOrder = {
   id: string;
@@ -34,6 +35,8 @@ type AddressForSnapshot = {
 };
 
 export class orderService {
+  private logger = baseLogger.child({ module: "order" });
+
   constructor(private readonly orderRepo: OrderRepo = new OrderRepo()) {}
 
   async getAllOrders(userId: string) {
@@ -74,6 +77,16 @@ export class orderService {
       await this.decrementStockOrThrow(tx, validItems);
       await this.orderRepo.clearCart(tx, cart.id);
 
+      this.logger.info(
+        {
+          action: "CREATE_ORDER",
+          userId,
+          addressId,
+          entityId: order.id,
+        },
+        "Order created",
+      );
+
       return order;
     });
   }
@@ -93,7 +106,11 @@ export class orderService {
     addressId: string,
     userId: string,
   ): Promise<AddressForSnapshot> {
-    const address = await this.orderRepo.findAddressForOrder(tx, addressId, userId);
+    const address = await this.orderRepo.findAddressForOrder(
+      tx,
+      addressId,
+      userId,
+    );
 
     if (!address) {
       throw new AppError(404, "Address not found");

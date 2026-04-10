@@ -1,9 +1,11 @@
 import "dotenv/config";
+import { performance } from "perf_hooks";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { getConfig } from "../config/env";
 import { faker } from "@faker-js/faker";
 import bcrypt from "bcrypt";
+import logger from "../config/logger";
 
 const config = getConfig();
 
@@ -196,32 +198,35 @@ async function seedDevData() {
   console.log("clear db...");
   await clearDB();
 
-  console.log("Seeding users...");
+  logger.info("Seeding users...");
   const users = await seedUsers(usersCount);
 
-  console.log("Seeding addresses...");
+  logger.info("Seeding addresses...");
   await seedAddresses(addressesCount, users);
 
-  console.log("Seeding categories...");
+  logger.info("Seeding categories...");
   const categories = await seedCategories();
 
-  console.log("Seeding products...");
+  logger.info("Seeding products...");
   const products = await seedProducts(productsCount, categories);
 
-  console.log("Seeding reviews...");
+  logger.info("Seeding reviews...");
   await seedReviews(reviewsCount, users, products);
 
-  console.log("Updating ratings...");
+  logger.info("Updating ratings...");
   await updateProductRatings();
 
-  console.log("Seeding done ✅");
+  logger.info("Seeding done ✅");
 }
 
 const main = async () => {
   if (config.env === "development") {
-    console.time("seed");
+    const start = performance.now();
     await seedDevData();
-    console.timeEnd("seed");
+    const duration = Math.round(performance.now() - start);
+    logger.info(
+      { durationMs: duration } + "Seeding completed in " + duration + "ms",
+    );
   }
 };
 
@@ -230,7 +235,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (error) => {
-    console.error(error);
+    logger.error({ error } + "Error occurred while seeding data:");
     await prisma.$disconnect();
     process.exit(1);
   });

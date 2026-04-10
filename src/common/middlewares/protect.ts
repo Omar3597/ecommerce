@@ -4,6 +4,7 @@ import { prisma } from "../../lib/prisma";
 import { catchAsync } from "../../common/middlewares/catchAsync";
 import AppError from "../../common/utils/appError";
 import jwt from "jsonwebtoken";
+import logger from "../../config/logger";
 
 interface JwtPayload {
   id: string;
@@ -42,6 +43,10 @@ export const protect = catchAsync(
     });
 
     if (!user) {
+      logger.warn(
+        { userId: payload.id },
+        "User associated with token not found or inactive",
+      );
       return next(new AppError(401, "User no longer exists"));
     }
 
@@ -51,6 +56,10 @@ export const protect = catchAsync(
       );
 
       if (changedTimestamp > payload.iat) {
+        logger.warn(
+          { userId: payload.id },
+          "User associated with token has changed password",
+        );
         return next(
           new AppError(401, "Password recently changed. Please login again."),
         );

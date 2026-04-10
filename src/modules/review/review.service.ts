@@ -3,8 +3,11 @@ import AppError from "../../common/utils/appError";
 import { CreateReviewInput, UpdateReviewInput } from "./review.validator";
 import { Actor, ReviewPolicy } from "./review.policy";
 import { ReviewRepo } from "./review.repo";
+import baseLogger from "../../config/logger";
 
 export class ReviewService {
+  private logger = baseLogger.child({ module: "review" });
+
   constructor(private readonly reviewRepo: ReviewRepo = new ReviewRepo()) {}
 
   async createReview({
@@ -42,6 +45,15 @@ export class ReviewService {
       });
 
       await this.updateProductRating(productId, tx);
+
+      this.logger.info(
+        {
+          action: "CREATE_REVIEW",
+          userId,
+          entityId: review.id,
+        },
+        "Review created",
+      );
 
       return review;
     });
@@ -100,6 +112,16 @@ export class ReviewService {
       await this.reviewRepo.deleteReview(tx, review.id);
 
       await this.updateProductRating(review.productId, tx);
+
+      this.logger.warn(
+        {
+          action: "DELETE_REVIEW",
+          userId: actor.id,
+          role: actor.role,
+          entityId: review.id,
+        },
+        "Review deleted",
+      );
     });
   }
 

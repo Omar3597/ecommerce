@@ -13,8 +13,10 @@ import {
   EmailTokenType,
 } from "../../common/services/email-token.service";
 import { UserRepo } from "./user.repo";
+import baseLogger from "../../config/logger";
 
 export class UserService {
+  private logger = baseLogger.child({ module: "user" });
   constructor(
     private readonly userRepo: UserRepo,
     private readonly authEmailTokenService: AuthEmailTokenService,
@@ -46,6 +48,15 @@ export class UserService {
       user.id,
       hashedPassword,
     );
+
+    this.logger.warn(
+      {
+        action: "UPDATE_PASSWORD",
+        userId: user.id,
+        entityId: user.id,
+      },
+      "Password updated",
+    );
   }
 
   async requestEmailChange(user: User, data: requestEmailChangeInput) {
@@ -74,6 +85,12 @@ export class UserService {
       .catch((err) =>
         console.error("Failed to create email change token: ", err),
       );
+
+    this.logger.info({
+      userId: user.id,
+      action: "REQUEST_EMAIL_CHANGE",
+      message: "Email change requested",
+    });
   }
 
   async verifyEmailChange(user: User, data: verifyEmailChangeInput) {
@@ -104,6 +121,15 @@ export class UserService {
       user.id,
       pendingEmail,
       storedToken.id,
+    );
+
+    this.logger.warn(
+      {
+        action: "VERIFY_EMAIL_CHANGE",
+        userId: user.id,
+        entityId: user.id,
+      },
+      "Email change verified",
     );
   }
 }

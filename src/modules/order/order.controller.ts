@@ -33,17 +33,22 @@ export class OrderController {
     });
   });
 
-  public createOrderFromCart = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
+  public createOrderFromCart = catchAsync(
+    async (req: Request, res: Response) => {
+      assertAuth(req);
 
-    const validatedData = createOrderSchema.parse(req);
-    const { addressId } = validatedData.body;
+      const validatedData = createOrderSchema.parse(req);
+      const { addressId } = validatedData.body;
 
-    const order = await this.orderService.createOrderFromCart(req.user.id, addressId);
+      const order = await this.orderService.createOrderFromCart(
+        req.user.id,
+        addressId,
+      );
 
-    res.status(201).json({
-      status: "success",
-      data: { order },
-    });
-  });
+      res.status(201).json({
+        status: "success",
+        data: { order },
+      });
+    },
+  );
 }

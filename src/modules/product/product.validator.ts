@@ -103,6 +103,19 @@ export const deleteImageSchema = z.object({
   }),
 });
 
+export const uploadImagesSchema = z.object({
+  files: z
+    .any()
+    .refine(
+      (files) => Array.isArray(files) && files.length > 0,
+      "Please upload at least one image.",
+    )
+    .refine(
+      (files) => Array.isArray(files) && files.length <= 3,
+      "You can upload a maximum of 3 images at a time.",
+    ),
+});
+
 export type ProductImageInput = z.infer<typeof productImageSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>["body"];
 export type CreateProductInput = z.infer<typeof createProductSchema>["body"];

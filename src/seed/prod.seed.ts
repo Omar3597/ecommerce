@@ -3,6 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { getConfig } from "../config/env";
 import bcrypt from "bcrypt";
+import logger from "../config/logger";
 
 const config = getConfig();
 
@@ -41,34 +42,56 @@ async function seedCategories() {
       .replace(/^-+|-+$/g, "")
       .replace(/-{2,}/g, "-");
 
-  for (const name of categories) {
+  const categoryPromises = categories.map((name) => {
     const slug = slugify(name);
-
-    await prisma.category.upsert({
+    return prisma.category.upsert({
       where: { slug },
       update: {},
-      create: {
-        name,
-        slug,
-      },
+      create: { name, slug },
     });
-  }
+  });
+
+  await Promise.all(categoryPromises);
 }
 
 async function seedProdData() {
-  console.log("Seeding production data...");
+  logger.info(
+    { action: "SEED_PRODUCTION_START" },
+    "Starting production data seeding",
+  );
 
   await seedManager();
-  await seedCategories();
+  logger.info(
+    { action: "SEED_PRODUCTION_STEP" },
+    "Seeding manager user completed",
+  );
 
-  console.log("Production seed done ✅");
+  await seedCategories();
+  logger.info(
+    { action: "SEED_PRODUCTION_STEP" },
+    "Seeding categories completed",
+  );
 }
 
 const main = async () => {
   if (config.env === "production") {
-    console.time("seed");
+    const start = performance.now();
+
     await seedProdData();
-    console.timeEnd("seed");
+
+    const duration = Math.round(performance.now() - start);
+    logger.info(
+      {
+        durationMs: duration,
+        action: "SEED_PRODUCTION_SUCCESS",
+      },
+      `Production data seeding completed successfully in ${duration}ms`,
+    );
+  } else {
+    logger.info(
+      { action: "SEED_SKIPPED" },
+      "Seeding skipped: Not in production environment",
+    );
   }
 };
 
@@ -77,7 +100,14 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (error) => {
-    console.error(error);
+    logger.error(
+      {
+        error,
+        action: "SEED_PRODUCTION_FAILED",
+      },
+      "Critical error occurred while seeding production data",
+    );
+
     await prisma.$disconnect();
     process.exit(1);
   });

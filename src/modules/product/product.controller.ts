@@ -1,14 +1,13 @@
 import { Request, Response } from "express";
 import { ProductService } from "./product.service";
 import { catchAsync } from "../../common/middlewares/catchAsync";
-import { StorageService } from "../../common/services/cloudinary.service";
-import AppError from "../../common/utils/appError";
 import {
   createProductSchema,
   deleteImageSchema,
   deleteProductSchema,
   getProductSchema,
   updateProductSchema,
+  uploadImagesSchema,
 } from "./product.validator";
 import {
   toPaginatedAdminResponse,
@@ -16,6 +15,7 @@ import {
   toPublicProductDetails,
 } from "./product.dto";
 import { getConfig } from "../../config/env";
+import { assertAuth } from "../../common/guards/assert-auth";
 
 const config = getConfig();
 
@@ -23,9 +23,13 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   public createProduct = catchAsync(async (req: Request, res: Response) => {
+    assertAuth(req);
     const validatedData = createProductSchema.parse(req);
 
-    const product = await this.productService.createProduct(validatedData.body);
+    const product = await this.productService.createProduct(
+      validatedData.body,
+      { userId: req.user.id, role: req.user.role },
+    );
 
     res.status(201).json({
       status: "success",
@@ -63,12 +67,17 @@ export class ProductController {
   );
 
   public updateProduct = catchAsync(async (req: Request, res: Response) => {
+    assertAuth(req);
     const validatedData = updateProductSchema.parse(req);
     const { productId } = validatedData.params;
 
     const product = await this.productService.updateProduct(
       productId,
       validatedData.body,
+      {
+        userId: req.user.id,
+        role: req.user.role,
+      },
     );
 
     res.status(200).json({
@@ -78,10 +87,14 @@ export class ProductController {
   });
 
   public deleteProduct = catchAsync(async (req: Request, res: Response) => {
+    assertAuth(req);
     const validatedData = deleteProductSchema.parse(req);
     const { productId } = validatedData.params;
 
-    await this.productService.deleteProduct(productId);
+    await this.productService.deleteProduct(productId, {
+      userId: req.user.id,
+      role: req.user.role,
+    });
 
     res.status(204).send();
   });
@@ -117,37 +130,36 @@ export class ProductController {
   );
 
   public uploadImages = catchAsync(async (req: Request, res: Response) => {
-    const files = req.files as Express.Multer.File[] | undefined;
-
-    if (!files || files.length === 0) {
-      throw new AppError(400, "Please upload at least one image.");
-    }
-
-    if (files.length > 3) {
-      throw new AppError(
-        400,
-        "You can upload a maximum of 3 images at a time.",
-      );
-    }
-
+    assertAuth(req);
+    const validatedData = uploadImagesSchema.parse(req);
+    const files = validatedData.files as Express.Multer.File[];
     const buffers = files.map((f) => f.buffer);
-    const results = await StorageService.bulkUploadImages(buffers, "products");
+
+    const results = await this.productService.uploadImages(buffers, {
+      userId: req.user.id,
+      role: req.user.role,
+    });
 
     res.status(200).json({
       status: "success",
       results: results.length,
       data: {
-        images: results.map(({ url, publicId }) => ({ url, publicId })),
+        images: results,
       },
     });
   });
 
   public deleteImage = catchAsync(async (req: Request, res: Response) => {
+    assertAuth(req);
     const validatedData = deleteImageSchema.parse(req);
     const { publicId } = validatedData.params;
 
-    await StorageService.deleteImage(publicId);
+    await this.productService.deleteImage(publicId, {
+      userId: req.user.id,
+      role: req.user.role,
+    });
 
     res.status(204).send();
   });
 }
+

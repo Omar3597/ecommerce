@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { PrismaClient, TokenType } from "@prisma/client";
 import Email from "../utils/email";
 import { getConfig } from "../../config/env";
+import logger from "../../config/logger";
 
 const config = getConfig();
 
@@ -114,7 +115,15 @@ export class AuthEmailTokenService {
     try {
       await sendEmail(new Email(user, url));
     } catch (err) {
-      console.error(`Failed to send ${type} email:`, err);
+      logger.error(
+        {
+          error: err,
+          userId: user.id,
+          tokenType: type,
+        },
+        "Failed to send email token",
+      );
+      // Don't throw error to avoid disrupting user flow, but log it for investigation
     }
   }
 

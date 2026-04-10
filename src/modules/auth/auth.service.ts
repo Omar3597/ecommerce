@@ -9,10 +9,12 @@ import {
 } from "../../common/services/email-token.service";
 import { AuthRepo } from "./auth.repo";
 import { getConfig } from "../../config/env";
+import baseLogger from "../../config/logger";
 
 const config = getConfig();
 
 export class AuthService {
+  private logger = baseLogger.child({ module: "auth" });
   constructor(
     private readonly authRepo: AuthRepo,
     private readonly authEmailTokenService: AuthEmailTokenService,
@@ -92,6 +94,14 @@ export class AuthService {
 
     this.sendAuthEmail(newUser, EmailTokenType.VERIFICATION);
 
+    this.logger.info(
+      {
+        action: "CREATE_USER",
+        entityId: newUser.id,
+      },
+      "User created",
+    );
+
     return newUser;
   }
 
@@ -99,12 +109,27 @@ export class AuthService {
     const user = await this.authRepo.findUserByEmail(data.email);
 
     if (!user || user.isDeleted || user.isBanned) {
+      this.logger.warn(
+        {
+          action: "LOGIN_FAILED",
+          userId: user?.id,
+        },
+        "Failed login attempt due to non-existent or inactive account",
+      );
+
       await bcrypt.compare(data.password, "$2b$12$invalidhash");
       throw new AppError(401, "Invalid email or password");
     }
 
     const matchPasswords = await bcrypt.compare(data.password, user.password);
     if (!matchPasswords) {
+      this.logger.warn(
+        {
+          action: "LOGIN_FAILED",
+          userId: user.id,
+        },
+        "Failed login attempt due to incorrect password",
+      );
       throw new AppError(401, "Invalid email or password");
     }
 
@@ -127,6 +152,14 @@ export class AuthService {
       user.id,
       hashedRefreshToken,
       expiresAt,
+    );
+
+    this.logger.info(
+      {
+        action: "LOGIN_SUCCESS",
+        userId: user.id,
+      },
+      "User logged in successfully",
     );
 
     return {
@@ -177,6 +210,14 @@ export class AuthService {
 
     if (!user) return;
 
+    this.logger.info(
+      {
+        action: "PASSWORD_RESET_REQUEST",
+        userId: user.id,
+      },
+      "Password reset requested",
+    );
+
     this.sendAuthEmail(user, EmailTokenType.PASSWORD_RESET);
   }
 
@@ -186,15 +227,30 @@ export class AuthService {
       await this.authRepo.findValidPasswordResetToken(hashedToken);
 
     if (!storedToken) {
+      this.logger.warn(
+        {
+          action: "PASSWORD_RESET_FAILED",
+          userId: null,
+        },
+        "Failed password reset attempt due to invalid or expired token",
+      );
       throw new AppError(400, "Token is invalid or has expired");
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    await this.authRepo.resetPasswordAndRevokeTokens(
+    const result = await this.authRepo.resetPasswordAndRevokeTokens(
       storedToken.userId,
       hashedPassword,
     );
+    this.logger.info(
+      {
+        action: "PASSWORD_RESET_SUCCESS",
+        userId: storedToken.userId,
+      },
+      "Password reset successfully",
+    );
+    return result;
   }
 
   async verifyEmail(token: string) {
@@ -207,6 +263,13 @@ export class AuthService {
     }
 
     await this.authRepo.verifyUserEmail(storedToken.userId, storedToken.id);
+    this.logger.info(
+      {
+        action: "EMAIL_VERIFICATION_SUCCESS",
+        userId: storedToken.userId,
+      },
+      "Email verified successfully",
+    );
   }
 
   async logout(refreshToken: string) {

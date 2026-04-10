@@ -4,8 +4,10 @@ import { catchAsync } from "../../common/middlewares/catchAsync";
 import { createPaymentSessionSchema } from "./payment.validator";
 import type { CreatePaymentSessionInput } from "./payment.validator";
 import { PaymentService } from "./payment.service";
+import baseLogger from "../../config/logger";
 
 export class PaymentController {
+  private logger = baseLogger.child({ module: "payment" });
   constructor(private readonly paymentService: PaymentService) {}
 
   public createPaymentSession = catchAsync(
@@ -33,11 +35,13 @@ export class PaymentController {
       const signature = req.headers["stripe-signature"];
 
       if (typeof signature !== "string") {
+        this.logger.warn("Missing stripe-signature header");
         throw new Error("Missing stripe-signature header");
       }
 
       if (!Buffer.isBuffer(req.body)) {
-        throw new Error("Invalid webhook payload");
+        this.logger.warn("Invalid stripe webhook payload");
+        throw new Error("Invalid stripe webhook payload");
       }
 
       const event = this.paymentService.constructWebhookEvent(

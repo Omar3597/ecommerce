@@ -3,8 +3,10 @@ import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import { getConfig } from "../../config/env.js";
 import AppError from "../utils/appError.js";
+import logger from "../../config/logger.js";
 
 const sendErrorDev = (err: AppError, res: Response) => {
+  logger.error({ error: err }, "Error occurred");
   res.status(err.statusCode || 500).json({
     status: err.status || "error",
     message: err.message || "Something went wrong",
@@ -13,13 +15,21 @@ const sendErrorDev = (err: AppError, res: Response) => {
   });
 };
 
-const sendErrorProd = (err: AppError, res: Response) => {
+const sendErrorProd = (err: AppError, req: Request, res: Response) => {
   if (err.isOperational) {
     return res.status(err.statusCode).json({
       status: err.status,
       message: err.message,
     });
   }
+
+  logger.error(
+    {
+      userId: (req as any).user?.id,
+      err,
+    },
+    "Unhandled error",
+  );
 
   return res.status(500).json({
     status: "error",
@@ -105,7 +115,7 @@ export const errHandler = (
   }
 
   if (env === "production") {
-    return void sendErrorProd(error, res);
+    return void sendErrorProd(error, req, res);
   }
 
   return void sendErrorDev(error, res);

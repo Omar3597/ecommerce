@@ -1,7 +1,13 @@
 import { Role, ROLES } from "./roles";
 
 export type Action = "read" | "create" | "update" | "delete";
-export type Resource = "product" | "review" | "user" | "order" | "category";
+export type Resource =
+  | "product"
+  | "review"
+  | "user"
+  | "order"
+  | "category"
+  | "dashboard";
 
 type PermissionMap = {
   [R in Resource]?: {
@@ -26,7 +32,7 @@ export const permissions: PermissionMap = {
 
   user: {
     read: [ROLES.ADMIN, ROLES.MANAGER],
-    create: "*", // مفتوحة للـ Registration
+    create: "*",
     update: [ROLES.ADMIN],
     delete: [ROLES.ADMIN],
   },
@@ -36,5 +42,12 @@ export const permissions: PermissionMap = {
     create: [ROLES.USER, ROLES.ADMIN],
     update: [ROLES.ADMIN, ROLES.MANAGER],
     delete: [ROLES.ADMIN],
+  },
+
+  dashboard: {
+    read: [ROLES.ADMIN, ROLES.MANAGER],
+    create: "*",
+    update: "*",
+    delete: "*",
   },
 };

@@ -1,54 +1,55 @@
-import express from "express";
-import { authorize } from "../../../common/middlewares/authorize";
-import { ProductService } from "../../product/product.service";
-import { ProductController } from "../../product/product.controller";
-import { upload } from "../../../common/middlewares/upload";
+import { Router } from "express";
+import { authorize } from "../../common/middlewares/authorize";
+import { ProductService } from "./product.service";
+import { ProductController } from "./product.controller";
+import { upload } from "../../common/middlewares/upload";
 
-const router = express.Router({ mergeParams: true });
+const adminProductRouter = Router();
 
 const productService = new ProductService();
 const productController = new ProductController(productService);
 
-router.get(
+adminProductRouter.get(
   "/",
   authorize("product", "read"),
   productController.getAllProductsAdmin,
 );
-router.get(
+
+adminProductRouter.get(
   "/:productId",
   authorize("product", "read"),
   productController.getOneProductAdmin,
 );
 
-router.post(
+adminProductRouter.post(
   "/uploads/images",
   authorize("product", "create"),
   upload.array("image"),
   productController.uploadImages,
 );
 
-router.delete(
+adminProductRouter.delete(
   "/uploads/images/:publicId",
   authorize("product", "update"),
   productController.deleteImage,
 );
 
-router.post(
+adminProductRouter.post(
   "/",
   authorize("product", "create"),
   productController.createProduct,
 );
 
-router.patch(
+adminProductRouter.patch(
   "/:productId",
   authorize("product", "update"),
   productController.updateProduct,
 );
 
-router.delete(
+adminProductRouter.delete(
   "/:productId",
   authorize("product", "delete"),
   productController.deleteProduct,
 );
 
-export default router;
+export default adminProductRouter;

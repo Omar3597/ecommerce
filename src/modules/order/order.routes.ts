@@ -4,19 +4,19 @@ import { orderService } from "./order.service";
 import { OrderController } from "./order.controller";
 import paymentRouter from "../payment/payment.routes";
 
-const router = Router();
+const orderRouter = Router();
 
 const orderRepo = new OrderRepo();
 const service = new orderService(orderRepo);
 const controller = new OrderController(service);
 
-router
+orderRouter
   .route("/")
   .get(controller.getAllOrders)
   .post(controller.createOrderFromCart);
 
-router.route("/:orderId").get(controller.getOrderById);
+orderRouter.route("/:orderId").get(controller.getOrderById);
 
-router.use("/:orderId/payment", paymentRouter);
+orderRouter.use("/:orderId/payment", paymentRouter);
 
-export default router;
+export default orderRouter;

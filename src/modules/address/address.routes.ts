@@ -3,21 +3,21 @@ import { AddressService } from "./address.service";
 import { AddressController } from "./address.controller";
 import { AddressRepo } from "./address.repo";
 
-const router = Router();
+const addressRouter = Router();
 
 const addressRepo = new AddressRepo();
 const addressService = new AddressService(addressRepo);
 const addressController = new AddressController(addressService);
 
-router
+addressRouter
   .route("/")
   .post(addressController.createAddress)
   .get(addressController.getAllAddresses);
 
-router
+addressRouter
   .route("/:addressId")
   .get(addressController.getAddress)
   .patch(addressController.updateAddress)
   .delete(addressController.deleteAddress);
 
-export default router;
+export default addressRouter;

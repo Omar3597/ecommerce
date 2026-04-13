@@ -8,9 +8,9 @@ const reviewRepo = new ReviewRepo();
 const reviewService = new ReviewService(reviewRepo);
 const reviewController = new ReviewController(reviewService);
 
-const router = Router({ mergeParams: true });
+const productReviewRouter = Router({ mergeParams: true });
 
-router.get("/", reviewController.getProductReviews);
-router.post("/", protect, reviewController.createReview);
+productReviewRouter.get("/", reviewController.getProductReviews);
+productReviewRouter.post("/", protect, reviewController.createReview);
 
-export default router;
+export default productReviewRouter;

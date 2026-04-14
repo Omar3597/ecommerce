@@ -129,13 +129,17 @@ export const seedCategoryAndProduct = async (
       categoryId: category.id,
       productImages: {
         create: overrides.images || [
-          { url: "https://example.com/default.png", publicId: `default_id_${uniqueSuffix}`, sortOrder: 0 }
-        ]
-      }
+          {
+            url: "https://example.com/default.png",
+            publicId: `default_id_${uniqueSuffix}`,
+            sortOrder: 0,
+          },
+        ],
+      },
     },
     include: {
-      productImages: true
-    }
+      productImages: true,
+    },
   });
 
   return { category, product };
@@ -314,4 +318,146 @@ export const seedOrderForReview = async () => {
   await seedOrder(user.id, address.id, orderItems, { status: "DELIVERED" });
 
   return { user, token, product };
+};
+
+/**
+ * Seeds two categories, two products, two users, and five orders with
+ * varying statuses and dates within the last month.
+ * Returns everything needed to assert against the dashboard response.
+ */
+export const seedDashboardData = async () => {
+  // ── Users ──────────────────────────────────────────────────────────────────
+  // user1 → places 3 paid orders (repeat customer)
+  // user2 → places 1 paid order + 1 cancelled order (one-time buyer for paid)
+  const { user: user1 } = await seedUser({
+    email: "buyer1@example.com",
+    role: Role.USER,
+  });
+  const { user: user2 } = await seedUser({
+    email: "buyer2@example.com",
+    role: Role.USER,
+  });
+
+  // ── Categories & Products ──────────────────────────────────────────────────
+  const { category: catA, product: productA } = await seedCategoryAndProduct({
+    categoryName: "Electronics",
+    categorySlug: "electronics",
+    name: "Laptop",
+    price: 100_000, // 100,000 cents
+    stock: 5, // low stock (≤ 10)
+  });
+
+  const { category: catB, product: productB } = await seedCategoryAndProduct({
+    categoryName: "Books",
+    categorySlug: "books",
+    name: "TypeScript Handbook",
+    price: 2_000,
+    stock: 50,
+  });
+
+  // ── Address ────────────────────────────────────────────────────────────────
+  const { address: addr1 } = await seedAddress(user1.id);
+  const { address: addr2 } = await seedAddress(user2.id);
+
+  // ── Orders ─────────────────────────────────────────────────────────────────
+  // Order 1 – user1, PAID, productA×1 + productB×2 → total = 100k + 4k = 104k
+  const { order: order1 } = await seedOrder(
+    user1.id,
+    addr1.id,
+    [
+      {
+        productId: productA.id,
+        productName: productA.name,
+        productPrice: productA.price,
+        quantity: 1,
+      },
+      {
+        productId: productB.id,
+        productName: productB.name,
+        productPrice: productB.price,
+        quantity: 2,
+      },
+    ],
+    { status: "PAID" },
+  );
+
+  // Order 2 – user1, SHIPPED, productA×2 → total = 200k
+  const { order: order2 } = await seedOrder(
+    user1.id,
+    addr1.id,
+    [
+      {
+        productId: productA.id,
+        productName: productA.name,
+        productPrice: productA.price,
+        quantity: 2,
+      },
+    ],
+    { status: "SHIPPED" },
+  );
+
+  // Order 3 – user1, DELIVERED, productB×3 → total = 6k
+  const { order: order3 } = await seedOrder(
+    user1.id,
+    addr1.id,
+    [
+      {
+        productId: productB.id,
+        productName: productB.name,
+        productPrice: productB.price,
+        quantity: 3,
+      },
+    ],
+    { status: "DELIVERED" },
+  );
+
+  // Order 4 – user2, PAID, productA×1 → total = 100k
+  const { order: order4 } = await seedOrder(
+    user2.id,
+    addr2.id,
+    [
+      {
+        productId: productA.id,
+        productName: productA.name,
+        productPrice: productA.price,
+        quantity: 1,
+      },
+    ],
+    { status: "PAID" },
+  );
+
+  // Order 5 – user2, CANCELLED, productB×1 → should NOT count in revenue
+  const { order: order5 } = await seedOrder(
+    user2.id,
+    addr2.id,
+    [
+      {
+        productId: productB.id,
+        productName: productB.name,
+        productPrice: productB.price,
+        quantity: 1,
+      },
+    ],
+    { status: "CANCELLED" },
+  );
+
+  // Expected paid revenue:
+  //   order1: 100k + 4k = 104k
+  //   order2: 200k
+  //   order3: 6k
+  //   order4: 100k
+  //   order5: CANCELLED → excluded
+  // total = 410,000
+  const expectedRevenue = 104_000 + 200_000 + 6_000 + 100_000;
+
+  return {
+    user1,
+    user2,
+    catA,
+    catB,
+    productA,
+    productB,
+    orders: [order1, order2, order3, order4, order5],
+    expectedRevenue,
+  };
 };

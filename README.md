@@ -1,6 +1,6 @@
 # E-Commerce Backend API
 
-A production-aware RESTful backend for an e-commerce platform, built with **Node.js**, **TypeScript**, **Express**, and **Prisma ORM** (PostgreSQL). Designed as a portfolio project to demonstrate professional backend engineering practices.
+A production-aware RESTful backend for an e-commerce application, built with **Node.js**, **TypeScript**, **Express**, and **Prisma ORM** (PostgreSQL). Designed as a portfolio project to demonstrate professional backend engineering practices.
 
 ---
 
@@ -22,7 +22,7 @@ A production-aware RESTful backend for an e-commerce platform, built with **Node
 
 ## 1. Project Overview
 
-This project implements the core concerns of a real e-commerce backend system: stateless JWT authentication with refresh token rotation, role-based access control, a full product catalog with Cloudinary image management, cart and checkout flows with inventory control, Stripe Checkout integration with webhook handling, customer reviews with purchase verification, and background cleanup jobs. The goal is to demonstrate a clean, modular, and production-aware codebase — not a toy CRUD app.
+This project implements the core concerns of a real e-commerce backend system: stateless JWT authentication with refresh token rotation, role-based access control, a full product catalog with Cloudinary image management, cart and checkout flows with inventory control, Stripe Checkout integration with webhook handling, customer reviews with purchase verification, background cleanup jobs, and an analytics dashboard that aggregates app-wide revenue, customer behavior, and inventory health metrics in a single API call. The goal is to demonstrate a clean, modular, and production-aware codebase — not a toy CRUD app.
 
 **Tech Stack:** Node.js · TypeScript · Express · Prisma ORM · PostgreSQL · Stripe · Cloudinary · Pino · Vitest · Docker
 
@@ -45,8 +45,13 @@ This project implements the core concerns of a real e-commerce backend system: s
 - **Purchase-verified reviews** — users can only review products from delivered orders; one review per user per product
 - **Structured logging (Pino)** — JSON logs in production, pretty-printed in development; automatic `requestId` injection via `AsyncLocalStorage`; sensitive fields (cookies, tokens, passwords, emails) redacted at the logger level
 - **Background jobs (node-cron)** — scheduled cleanup for expired tokens, stale carts, soft-deleted users, abandoned orders, and orphaned Cloudinary images; a shipping simulator for demo purposes
-- **Integration test suite** — Vitest-based integration tests covering all 9 modules, run against a dedicated Docker PostgreSQL instance
+- **Integration test suite** — Vitest-based integration tests covering all 10 modules, run against a dedicated Docker PostgreSQL instance
 - **Dockerized** — separate `docker-compose` files for development, production, and testing environments
+- **Analytics dashboard** — single `GET /stats` endpoint that returns a complete application snapshot; all heavy aggregations run in parallel via `Promise.all`
+  - **Financial metrics** — current/previous period revenue, order counts, period-over-period growth %, and average order value
+  - **Product & inventory health** — best-selling products (by units sold), category revenue distribution, low-stock alerts (≤ 10 units), and dead-stock detection (products with no sales in 30+ days)
+  - **Customer behavior** — new user count, repeat-customer rate, and period-over-period repeat-customer growth to distinguish loyal buyers from one-time purchasers
+  - **Flexible time windows** — supports three preset intervals (`week`, `month`, `year`) and arbitrary custom `startDate`/`endDate` ranges validated via Zod
 
 ---
 
@@ -282,6 +287,63 @@ If order status is `PENDING` for more than 10 minutes and user did not complete 
 | `POST`   | `/api/v1/products/:productId/reviews` | Submit review (requires completed order)               |
 | `GET`    | `/api/v1/users/me/address`            | Saved shipping addresses                               |
 
+### Dashboard (Admin / Manager)
+
+| Method | Endpoint                        | Description                                                                                                                         |
+| ------ | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/api/v1/admin/dashboard/stats` | Full application snapshot: revenue, orders, best sellers, category distribution, customer behavior, low-stock and dead-stock alerts |
+
+**Query parameters (one of the following is required):**
+
+| Parameter   | Type     | Example                     | Description                                   |
+| ----------- | -------- | --------------------------- | --------------------------------------------- |
+| `period`    | `string` | `week` \| `month` \| `year` | Preset interval relative to today             |
+| `startDate` | `date`   | `2024-01-01`                | Start of a custom range (pair with `endDate`) |
+| `endDate`   | `date`   | `2024-03-31`                | End of a custom range (pair with `startDate`) |
+
+**Response shape:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "summary": {
+      "revenue": { "current": 0, "previous": 0, "growth": null },
+      "orders": { "current": 0, "previous": 0, "growth": null },
+      "avgOrderValue": 0,
+      "newUsers": 0,
+      "repeatCustomers": {
+        "current": 0,
+        "previous": 0,
+        "rate": 0,
+        "growth": null,
+        "isReliable": false
+      },
+      "highlights": { "topCategory": null, "topProduct": null, "bestDay": null }
+    },
+    "charts": {
+      "salesOverTime": [
+        { "date": "2024-01-01", "revenue": 0, "orderCount": 0 }
+      ],
+      "categoryDistribution": [
+        { "category": "Electronics", "count": 0, "revenue": 0 }
+      ],
+      "bestSellers": [
+        { "id": "", "name": "", "price": 0, "totalSold": 0, "revenue": 0 }
+      ],
+      "orderStatus": [{ "status": "PAID", "count": 0, "revenue": 0 }]
+    },
+    "alerts": {
+      "outOfStockRate": 0,
+      "lowStock": [{ "id": "", "name": "", "stock": 0, "price": 0 }],
+      "deadStock": [
+        { "id": "", "name": "", "stock": 0, "price": 0, "daysWithoutSales": 0 }
+      ]
+    }
+  }
+}
+```
+
 ---
 
 ## 6. API Response Format
@@ -461,15 +523,21 @@ When a user places an order, the selected shipping address is copied into a sepa
 
 Cron jobs run inside the same Node.js process as the API. This is operationally simple and sufficient for the current scale. The trade-off is reliability: if the server crashes mid-job, the job is abandoned with no retry mechanism. A Redis-backed job queue (BullMQ) would solve this and is the intended next step.
 
+**Raw SQL for dashboard aggregations (`$queryRaw`)**
+
+The dashboard's analytical queries — `DATE_TRUNC` for time-bucket grouping, `COALESCE(MAX(...))` for dead-stock detection, CTEs for repeat-customer classification — cannot be expressed efficiently through Prisma's typed query builder. `$queryRaw` with `Prisma.sql` tagged templates is used instead. This allows leveraging the full power of SQL for complex aggregations while still benefiting from Prisma's connection management and transaction support.
+
 ---
 
 ## 10. Future Improvements
 
 - **Redis caching for catalog queries** — `GET /api/v1/products` hits the database on every request. A short-TTL Redis cache would reduce database load under real traffic.
+- **Redis caching for dashboard stats** — The dashboard's nine parallel aggregation queries are compute-heavy. A short-TTL Redis cache (e.g. 5 minutes) keyed by interval would make repeated dashboard loads near-instant and drastically reduce database pressure during peak admin usage.
 - **Migrate background jobs to BullMQ** — Replace in-process `node-cron` with BullMQ for reliable job retries, delayed scheduling, concurrency control, and observability.
 - **Per-user rate limiting on authenticated routes** — The current rate limiter is IP-based. Authenticated routes should additionally enforce limits keyed by user ID to handle shared-IP scenarios (e.g., corporate networks).
 - **Cursor-based pagination** — The current product list uses offset pagination (`skip`/`take`). Cursor-based pagination is more stable for large, frequently updated catalogs.
 - **Unit test coverage** — The existing suite covers integration-level behavior. Unit tests for service-layer business logic (particularly the checkout transaction and token rotation) would add a valuable safety net for refactoring.
+- **Downloadable analytics reports** — Allow admins to export the dashboard data as CSV or PDF files for offline reporting and stakeholder sharing.
 
 ---
 

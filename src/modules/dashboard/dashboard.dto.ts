@@ -28,6 +28,20 @@ type RawBestSellerRow = {
 type RawOrderStatusRow = {
   status: string;
   count: number;
+  revenue: number;
+};
+
+type RawCustomerStats = {
+  current: { total_count: number; repeat_count: number };
+  previous: { total_count: number; repeat_count: number };
+};
+
+type RawDeadStockRow = {
+  id: string;
+  name: string;
+  stock: number;
+  price: number;
+  daysWithoutSales: number;
 };
 
 type RawLowStockProduct = {
@@ -37,7 +51,7 @@ type RawLowStockProduct = {
   price: number;
 };
 
-export type RawStatsData = {
+type RawStatsData = {
   currentPeriod: RawPeriodAggregate;
   previousPeriod: RawPeriodAggregate;
   newUsers: number;
@@ -46,13 +60,16 @@ export type RawStatsData = {
   bestSellers: RawBestSellerRow[];
   orderStatus: RawOrderStatusRow[];
   lowStock: RawLowStockProduct[];
+  customerStats: RawCustomerStats;
+  deadStock: RawDeadStockRow[];
+  productStockStats: [number, number];
 };
 
 // ─── Mappers ─────────────────────────────────────────────────────────────────
 
 function calcGrowth(current: number, previous: number): number | null {
   if (previous === 0) return null;
-  return Math.round(((current - previous) / previous) * 100);
+  return Math.round(((current - previous) / previous) * 100 * 10) / 10; // one decimal place
 }
 
 export function toStatsResponse(raw: RawStatsData) {
@@ -62,6 +79,30 @@ export function toStatsResponse(raw: RawStatsData) {
   const previousOrders = raw.previousPeriod._count.id;
   const avgOrderValue =
     currentOrders > 0 ? Math.round(currentRevenue / currentOrders) : 0;
+
+  const repeatCurrent = raw.customerStats.current.repeat_count;
+  const repeatPrevious = raw.customerStats.previous.repeat_count;
+  const totalCurrent = raw.customerStats.current.total_count;
+  const repeatRate =
+    totalCurrent > 0 ? Math.round((repeatCurrent / totalCurrent) * 100) : null;
+  const repeatGrowth = calcGrowth(repeatCurrent, repeatPrevious);
+
+  const topCategory = raw.categoryDistribution[0]?.category || null;
+  const topProduct = raw.bestSellers[0]?.name || null;
+  const bestDayRow = raw.salesOverTime.reduce(
+    (max, curr) => (curr.revenue > max.revenue ? curr : max),
+    raw.salesOverTime[0] || null,
+  );
+  const bestDay = bestDayRow
+    ? bestDayRow.period.toISOString().split("T")[0]
+    : null;
+
+  const totalProducts = raw.productStockStats[0];
+  const outOfStockProducts = raw.productStockStats[1];
+  const outOfStockRate =
+    totalProducts > 0
+      ? Math.round((outOfStockProducts / totalProducts) * 100 * 10) / 10 // one decimal place
+      : null;
 
   return {
     summary: {
@@ -77,6 +118,18 @@ export function toStatsResponse(raw: RawStatsData) {
       },
       avgOrderValue,
       newUsers: raw.newUsers,
+      repeatCustomers: {
+        current: repeatCurrent,
+        previous: repeatPrevious,
+        rate: repeatRate,
+        growth: repeatGrowth,
+        isReliable: repeatCurrent >= 10 && repeatPrevious >= 10, // at least 10 repeat customers in both periods for reliability
+      },
+      highlights: {
+        topCategory,
+        topProduct,
+        bestDay,
+      },
     },
     charts: {
       salesOverTime: raw.salesOverTime.map((row) => ({
@@ -99,10 +152,13 @@ export function toStatsResponse(raw: RawStatsData) {
       orderStatus: raw.orderStatus.map((row) => ({
         status: row.status,
         count: row.count,
+        revenue: row.revenue,
       })),
     },
     alerts: {
+      outOfStockRate,
       lowStock: raw.lowStock,
+      deadStock: raw.deadStock,
     },
   };
 }

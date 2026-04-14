@@ -27,6 +27,9 @@ export class DashboardService {
       bestSellers,
       orderStatus,
       lowStock,
+      customerStats,
+      deadStock,
+      productStockStats,
     ] = await Promise.all([
       this.repo.getSummaryStats(interval),
       this.repo.getSalesOverTime(interval),
@@ -34,6 +37,9 @@ export class DashboardService {
       this.repo.getBestSellers(interval),
       this.repo.getOrderStatusDistribution(interval),
       this.repo.getLowStockProducts(),
+      this.repo.getCustomerStats(interval),
+      this.repo.getDeadStock(),
+      this.repo.getProductStockStats(),
     ]);
 
     return {
@@ -45,6 +51,9 @@ export class DashboardService {
       bestSellers,
       orderStatus,
       lowStock,
+      customerStats,
+      deadStock,
+      productStockStats,
     };
   }
 }

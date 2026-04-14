@@ -29,6 +29,17 @@ type BestSellerRow = {
 type OrderStatusRow = {
   status: string;
   count: number;
+  revenue: number;
+};
+
+type CustomerStats = { repeat_count: number; total_count: number };
+
+type DeadStockRow = {
+  id: string;
+  name: string;
+  stock: number;
+  price: number;
+  daysWithoutSales: number;
 };
 
 export class DashboardRepo {
@@ -74,7 +85,7 @@ export class DashboardRepo {
           COUNT(*)::int                     AS order_count
         FROM orders
         WHERE
-          status IN ('PAID', 'SHIPPED', 'DELIVERED')
+          status IN (${Prisma.join(PAID_STATUSES)})
           AND "createdAt" >= ${from}
           AND "createdAt" <= ${to}
         GROUP BY 1
@@ -98,7 +109,7 @@ export class DashboardRepo {
         JOIN "Category" c ON c.id = p."categoryId"
         JOIN orders o ON o.id = oi."orderId"
         WHERE
-          o.status IN ('PAID', 'SHIPPED', 'DELIVERED')
+          o.status IN (${Prisma.join(PAID_STATUSES)})
           AND o."createdAt" >= ${from}
           AND o."createdAt" <= ${to}
         GROUP BY c.name
@@ -135,7 +146,7 @@ export class DashboardRepo {
         JOIN products p ON p.id = oi."productId"
         JOIN orders o ON o.id = oi."orderId"
         WHERE
-          o.status IN ('PAID', 'SHIPPED', 'DELIVERED')
+          o.status IN (${Prisma.join(PAID_STATUSES)})
           AND o."createdAt" >= ${from}
           AND o."createdAt" <= ${to}
           AND oi."productId" IS NOT NULL
@@ -153,7 +164,8 @@ export class DashboardRepo {
       Prisma.sql`
         SELECT
           status,
-          COUNT(*)::int AS count
+          COUNT(*)::int AS count,
+          COALESCE(SUM(total), 0)::int AS revenue
         FROM orders
         WHERE
           "createdAt" >= ${from}
@@ -162,5 +174,68 @@ export class DashboardRepo {
         ORDER BY count DESC
       `,
     );
+  }
+
+  public async getCustomerStats(interval: ParsedInterval) {
+    const { from, to, previousFrom, previousTo } = interval;
+
+    const getStats = async (start: Date, end: Date) => {
+      const rows = await prisma.$queryRaw<CustomerStats[]>(Prisma.sql`
+        WITH user_orders AS (
+          SELECT "userId", COUNT(id) as order_count
+          FROM orders
+          WHERE status IN (${Prisma.join(PAID_STATUSES)})
+            AND "createdAt" >= ${start}
+            AND "createdAt" <= ${end}
+          GROUP BY "userId"
+        )
+        SELECT 
+          COUNT(*)::int as total_count,
+          COUNT(CASE WHEN order_count > 1 THEN 1 END)::int as repeat_count
+        FROM user_orders
+      `);
+      return rows[0] || { repeat_count: 0, total_count: 0 };
+    };
+
+    const [current, previous] = await Promise.all([
+      getStats(from, to),
+      getStats(previousFrom, previousTo),
+    ]);
+
+    return { current, previous };
+  }
+
+  public getDeadStock() {
+    return prisma.$queryRaw<DeadStockRow[]>(
+      Prisma.sql`
+        SELECT 
+          p.id, 
+          p.name, 
+          p.stock,
+          p.price,
+          EXTRACT(DAY FROM (NOW() - COALESCE(MAX(o."createdAt"), p."createdAt")))::int AS "daysWithoutSales"
+        FROM products p
+        LEFT JOIN order_items oi ON oi."productId" = p.id
+        LEFT JOIN orders o ON o.id = oi."orderId" AND o.status IN (${Prisma.join(PAID_STATUSES)}) 
+        LEFT JOIN "Category" c ON c.id = p."categoryId"
+        WHERE p.stock > 0 AND p."isHidden" = false 
+        AND c."isHidden" = false
+        GROUP BY p.id, p.name, p.stock, p.price, p."createdAt"
+        HAVING EXTRACT(DAY FROM (NOW() - COALESCE(MAX(o."createdAt"), p."createdAt"))) >= 30
+        ORDER BY "daysWithoutSales" DESC
+        LIMIT 10
+      `,
+    );
+  }
+
+  public async getProductStockStats() {
+    return prisma.$transaction([
+      prisma.product.count({
+        where: { isHidden: false, category: { isHidden: false } },
+      }),
+      prisma.product.count({
+        where: { isHidden: false, stock: 0, category: { isHidden: false } },
+      }),
+    ]);
   }
 }

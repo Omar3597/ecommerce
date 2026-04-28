@@ -35,7 +35,7 @@ const httpLogger = pinoHttp({
     res: (res) => {
       return {
         statusCode: res.statusCode,
-        headers: res.getHeaders(),
+        headers: res.getHeaders,
       };
     },
   },

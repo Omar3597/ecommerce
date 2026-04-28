@@ -3,9 +3,29 @@ import { CreateProductInput, UpdateProductInput } from "./product.validator";
 import { ProductRepo } from "./product.repo";
 import { StorageService } from "../../common/services/cloudinary.service";
 import baseLogger from "../../config/logger";
+import cacheService from "../../common/services/cache.service";
+
 export class ProductService {
   private logger = baseLogger.child({ module: "product" });
   constructor(private readonly productRepo: ProductRepo = new ProductRepo()) {}
+
+  async getPublicProducts(reqQuery: Record<string, any>) {
+    const { page = 1, limit = 20, sort, filter } = reqQuery;
+
+    const isCacheable =
+      Number(page) === 1 && Number(limit) === 20 && !filter && !sort;
+    if (!isCacheable) return this.productRepo.findProducts(reqQuery, false);
+
+    return cacheService.wrap(
+      `products:page:${page}`,
+      300, // 5 minutes
+      () => this.productRepo.findProducts(reqQuery, false),
+    );
+  }
+
+  async getAdminProducts(reqQuery: Record<string, any>) {
+    return this.productRepo.findProducts(reqQuery, true);
+  }
 
   async createProduct(
     data: CreateProductInput,
@@ -30,10 +50,6 @@ export class ProductService {
     );
 
     return product;
-  }
-
-  async getAllProducts(reqQuery: Record<string, any>, includeHidden = false) {
-    return this.productRepo.findProducts(reqQuery, includeHidden);
   }
 
   async updateProduct(

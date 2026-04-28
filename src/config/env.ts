@@ -19,6 +19,11 @@ interface IConfig {
   MAX_CART_QUANTITY: number;
   MAX_ACTIVE_SESSIONS: number;
 
+  //cache
+  REDIS_HOST: string;
+  REDIS_PORT: number;
+  REDIS_PASSWORD: string;
+
   // Third-party
   MAIL_HOST: string;
   MAIL_PORT: number;
@@ -74,10 +79,13 @@ export const getConfig = (): IConfig => {
     "Core",
   );
 
-  // 2. Third-party vars — required in prod/dev
+  // 2. Third-party and cache vars — required in prod/dev
   if (NODE_ENV !== "test") {
     checkMissingVars(
       [
+        "REDIS_HOST",
+        "REDIS_PORT",
+        "REDIS_PASSWORD",
         "MAIL_HOST",
         "MAIL_PORT",
         "MAIL_USER",
@@ -106,6 +114,9 @@ export const getConfig = (): IConfig => {
     env: NODE_ENV,
     APP_PORT: parseInt(processEnv.APP_PORT!, 10),
     BASE_URL: processEnv.BASE_URL!,
+    REDIS_HOST: processEnv.REDIS_HOST ?? "dummy_redis_host",
+    REDIS_PORT: parseInt(processEnv.REDIS_PORT!, 10) ?? 0,
+    REDIS_PASSWORD: processEnv.REDIS_PASSWORD ?? "dummy_redis_password",
     JWT_SECRET: processEnv.JWT_SECRET!,
     REFRESH_TOKEN_SECRET: processEnv.REFRESH_TOKEN_SECRET!,
     MAX_CART_QUANTITY: parseInt(processEnv.MAX_CART_QUANTITY!, 10),

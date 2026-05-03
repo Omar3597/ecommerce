@@ -1,2 +1,2 @@
-// export { AuthService } from "./services/auth.service";
+export { passwordSchema } from "./validators/auth.validator";
 export { default as authRouter } from "./routes/auth.routes";

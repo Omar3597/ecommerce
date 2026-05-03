@@ -10,7 +10,7 @@ import crypto from "crypto";
 import {
   AuthEmailTokenService,
   EmailTokenType,
-} from "../../../common/services/email-token.service";
+} from "../../../common/services/emailToken.service";
 import { AuthRepo } from "../repositories/auth.repo";
 import { getConfig } from "../../../config/env";
 import baseLogger from "../../../config/logger";

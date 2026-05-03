@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { CartService } from "../services/cart.service";
 import { catchAsync } from "../../../common/middlewares/catchAsync";
-import { assertAuth } from "../../../common/guards/assert-auth";
+import { assertAuth } from "../../../common/guards/assertAuth";
 import { getCartDto, updateCartItemDto } from "../dtos/cart.dto";
 import {
   addProductToCartSchema,

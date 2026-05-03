@@ -3,7 +3,7 @@ import { catchAsync } from "../../../common/middlewares/catchAsync";
 import { statsQuerySchema } from "../validators/dashboard.validator";
 import { parseInterval } from "../utils/dashboard.parser";
 import { DashboardService } from "../services/dashboard.service";
-import { assertAuth } from "../../../common/guards/assert-auth";
+import { assertAuth } from "../../../common/guards/assertAuth";
 import { toStatsResponse } from "../dtos/dashboard.dto";
 
 export class DashboardController {

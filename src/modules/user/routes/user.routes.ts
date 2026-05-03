@@ -2,7 +2,7 @@ import { Router } from "express";
 import { UserService } from "../services/user.service";
 import { UserController } from "../controllers/user.controller";
 import { UserRepo } from "../repositories/user.repo";
-import { AuthEmailTokenService } from "../../../common/services/email-token.service";
+import { AuthEmailTokenService } from "../../../common/services/emailToken.service";
 import { prisma } from "../../../lib/prisma";
 
 const userRouter = Router();

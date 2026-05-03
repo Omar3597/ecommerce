@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { assertAuth } from "../../../common/guards/assert-auth";
+import { assertAuth } from "../../../common/guards/assertAuth";
 import { catchAsync } from "../../../common/middlewares/catchAsync";
 import {
   type CreatePaymentSessionInput,

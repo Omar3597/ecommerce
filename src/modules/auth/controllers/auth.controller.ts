@@ -10,7 +10,7 @@ import {
   refreshTokenSchema,
 } from "../validators/auth.validator";
 import { toPublicUser } from "../dtos/auth.dto";
-import { assertAuth } from "../../../common/guards/assert-auth";
+import { assertAuth } from "../../../common/guards/assertAuth";
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

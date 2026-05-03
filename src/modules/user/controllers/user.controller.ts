@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { UserService } from "../services/user.service";
 import { catchAsync } from "../../../common/middlewares/catchAsync";
-import { assertAuth } from "../../../common/guards/assert-auth";
+import { assertAuth } from "../../../common/guards/assertAuth";
 import {
   requestEmailChangeSchema,
   updateProfileSchema,

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { catchAsync } from "../../../common/middlewares/catchAsync";
-import { assertAuth } from "../../../common/guards/assert-auth";
+import { assertAuth } from "../../../common/guards/assertAuth";
 import { OrderService } from "../services/order.service";
 import {
   createOrderSchema,

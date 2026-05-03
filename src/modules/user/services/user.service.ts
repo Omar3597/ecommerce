@@ -11,7 +11,7 @@ import crypto from "crypto";
 import {
   AuthEmailTokenService,
   EmailTokenType,
-} from "../../../common/services/email-token.service";
+} from "../../../common/services/emailToken.service";
 import { UserRepo } from "../repositories/user.repo";
 import baseLogger from "../../../config/logger";
 

@@ -13,7 +13,7 @@ import {
   toCategoriesResponse,
   toCategoryResponse,
 } from "../dtos/category.dto";
-import { assertAuth } from "../../../common/guards/assert-auth";
+import { assertAuth } from "../../../common/guards/assertAuth";
 
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}

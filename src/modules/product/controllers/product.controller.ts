@@ -15,7 +15,7 @@ import {
   toPublicProductDetails,
 } from "../dtos/product.dto";
 import { getConfig } from "../../../config/env";
-import { assertAuth } from "../../../common/guards/assert-auth";
+import { assertAuth } from "../../../common/guards/assertAuth";
 
 const config = getConfig();
 

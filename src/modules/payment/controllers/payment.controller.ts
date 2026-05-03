@@ -1,0 +1,57 @@
+import { Request, Response } from "express";
+import { AuthRequest } from "../../../shared/types/auth.types";
+import { catchAsync } from "../../../middlewares/catchAsync";
+import {
+  type CreatePaymentSessionInput,
+  createPaymentSessionSchema,
+} from "../validators/payment.validator";
+import { PaymentService } from "../services/payment.service";
+import baseLogger from "../../../config/logger";
+
+export class PaymentController {
+  private logger = baseLogger.child({ module: "payment" });
+  constructor(private readonly paymentService: PaymentService) {}
+
+  public createPaymentSession = catchAsync(
+    async (req: AuthRequest, res: Response) => {
+      const validatedData: CreatePaymentSessionInput =
+        createPaymentSessionSchema.parse(req);
+      const { orderId } = validatedData.params;
+
+      const sessionId = await this.paymentService.createCheckoutSessionForOrder(
+        req.user.id,
+        orderId,
+      );
+
+      res.status(200).json({
+        status: "success",
+        data: { sessionId },
+      });
+    },
+  );
+
+  public handleStripeWebhook = catchAsync(
+    async (req: Request, res: Response) => {
+      const signature = req.headers["stripe-signature"];
+
+      if (typeof signature !== "string") {
+        this.logger.warn("Missing stripe-signature header");
+        throw new Error("Missing stripe-signature header");
+      }
+
+      if (!Buffer.isBuffer(req.body)) {
+        this.logger.warn("Invalid stripe webhook payload");
+        throw new Error("Invalid stripe webhook payload");
+      }
+
+      const event = this.paymentService.constructWebhookEvent(
+        req.body,
+        signature,
+      );
+
+      await this.paymentService.handleWebhookEvent(event);
+
+      res.status(200).json({ received: true });
+    },
+  );
+}

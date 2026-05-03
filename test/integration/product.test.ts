@@ -7,9 +7,9 @@ import {
   seedCategoryAndProduct,
 } from "../utils/testHelpers";
 import { Role } from "@prisma/client";
-import { StorageService } from "../../src/common/services/cloudinary.service";
+import { StorageService } from "../../src/shared/services/cloudinary.service";
 
-vi.mock("../../src/common/services/cloudinary.service", () => ({
+vi.mock("../../src/shared/services/cloudinary.service", () => ({
   StorageService: {
     bulkUploadImages: vi.fn(),
     deleteImage: vi.fn(),
@@ -39,7 +39,9 @@ describe("Product Integration Tests", () => {
       expect(response.body.pagination.totalItems).toBe(2);
       expect(Array.isArray(response.body.data.products)).toBe(true);
 
-      const productA = response.body.data.products.find((p: any) => p.name === "Product A");
+      const productA = response.body.data.products.find(
+        (p: any) => p.name === "Product A",
+      );
       expect(productA).toHaveProperty("image");
       expect(productA.image).toBe("https://example.com/default.png");
       expect(productA).not.toHaveProperty("publicId");
@@ -63,8 +65,13 @@ describe("Product Integration Tests", () => {
       expect(response.body.data.product.name).toBe("Seeded Product 1");
       expect(response.body.data.product).toHaveProperty("images");
       expect(Array.isArray(response.body.data.product.images)).toBe(true);
-      expect(response.body.data.product.images[0]).toHaveProperty("url", "https://example.com/default.png");
-      expect(response.body.data.product.images[0]).not.toHaveProperty("publicId");
+      expect(response.body.data.product.images[0]).toHaveProperty(
+        "url",
+        "https://example.com/default.png",
+      );
+      expect(response.body.data.product.images[0]).not.toHaveProperty(
+        "publicId",
+      );
     });
 
     it("should fail validation if productId is not a UUID", async () => {
@@ -160,7 +167,11 @@ describe("Product Integration Tests", () => {
           stock: 100,
           categoryId: category.id,
           images: [
-            { url: "https://example.com/img1.jpg", publicId: "img1", sortOrder: 0 },
+            {
+              url: "https://example.com/img1.jpg",
+              publicId: "img1",
+              sortOrder: 0,
+            },
           ],
         });
 
@@ -187,14 +198,22 @@ describe("Product Integration Tests", () => {
     it("should fail when unauthorized (no token)", async () => {
       const { category } = await seedCategoryAndProduct();
 
-      const response = await request(app).post("/api/v1/admin/products").send({
-        name: "Unauthorized Product",
-        summary: "A nice summary",
-        price: 200000,
-        stock: 100,
-        categoryId: category.id,
-        images: [{ url: "https://example.com/img2.jpg", publicId: "img2", sortOrder: 0 }],
-      });
+      const response = await request(app)
+        .post("/api/v1/admin/products")
+        .send({
+          name: "Unauthorized Product",
+          summary: "A nice summary",
+          price: 200000,
+          stock: 100,
+          categoryId: category.id,
+          images: [
+            {
+              url: "https://example.com/img2.jpg",
+              publicId: "img2",
+              sortOrder: 0,
+            },
+          ],
+        });
 
       expect(response.status).toBe(401);
     });
@@ -212,7 +231,13 @@ describe("Product Integration Tests", () => {
           price: 2000,
           stock: 100,
           categoryId: category.id,
-          images: [{ url: "https://example.com/img3.jpg", publicId: "img3", sortOrder: 0 }],
+          images: [
+            {
+              url: "https://example.com/img3.jpg",
+              publicId: "img3",
+              sortOrder: 0,
+            },
+          ],
         });
 
       expect(response.status).toBe(403);
@@ -227,7 +252,7 @@ describe("Product Integration Tests", () => {
       const buffer = Buffer.from("dummy content");
 
       vi.mocked(StorageService.bulkUploadImages).mockResolvedValue([
-        { url: "https://fake.url/img.jpg", publicId: "fake_public_id" }
+        { url: "https://fake.url/img.jpg", publicId: "fake_public_id" },
       ]);
 
       const response = await request(app)

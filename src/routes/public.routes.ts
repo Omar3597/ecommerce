@@ -1,21 +1,21 @@
 import { Router } from "express";
-import authRouter from "../modules/auth/auth.routes";
-import userRouter from "../modules/user/user.routes";
-import productRouter from "../modules/product/product.public.routes";
-import cartRouter from "../modules/cart/cart.routes";
-import orderRouter from "../modules/order/order.routes";
-import reviewRouter from "../modules/review/review.routes";
-import addressRouter from "../modules/address/address.routes";
-import productReviewRouter from "../modules/review/productReviews.routes";
-import categoryRouter from "../modules/category/category.public.routes";
-import { protect } from "../common/middlewares/protect";
+import { authRouter } from "../modules/auth";
+import { userRouter } from "../modules/user";
+import { publicProductRouter } from "../modules/product";
+import { cartRouter } from "../modules/cart";
+import { orderRouter } from "../modules/order";
+import { reviewRouter } from "../modules/review";
+import { addressRouter } from "../modules/address";
+import { productReviewRouter } from "../modules/review";
+import { publicCategoryRouter } from "../modules/category";
+import { protect } from "../middlewares/protect";
 
 const publicRouter = Router();
 
 publicRouter.use("/auth", authRouter);
-publicRouter.use("/users", protect ,userRouter);
-publicRouter.use("/products", productRouter);
-publicRouter.use("/categories", categoryRouter);
+publicRouter.use("/users", protect, userRouter);
+publicRouter.use("/products", publicProductRouter);
+publicRouter.use("/categories", publicCategoryRouter);
 publicRouter.use("/cart", protect, cartRouter);
 publicRouter.use("/orders", protect, orderRouter);
 publicRouter.use("/reviews", protect, reviewRouter);

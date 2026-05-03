@@ -1,7 +1,7 @@
 import { Router } from "express";
-import adminProductRouter from "../modules/product/product.admin.routes";
-import adminCategoryRouter from "../modules/category/category.admin.routes";
-import adminDashboardRouter from "../modules/dashboard/dashboard.routes";
+import { adminProductRouter } from "../modules/product";
+import { adminCategoryRouter } from "../modules/category";
+import { adminDashboardRouter } from "../modules/dashboard";
 
 const adminRouter = Router();
 

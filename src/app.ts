@@ -6,7 +6,7 @@ import hpp from "hpp";
 import cookieParser from "cookie-parser";
 import logger, { requestContext } from "./config/logger";
 import { errHandler } from "./common/errors/errHandler";
-import { paymentWebhookHandler } from "./modules/payment/payment.routes";
+import { paymentWebhookHandler } from "./modules/payment";
 import rootRouter from "./routes";
 
 const app = express();

@@ -1,6 +1,6 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { catchAsync } from "../../../common/middlewares/catchAsync";
-import { assertAuth } from "../../../common/guards/assertAuth";
+import { AuthRequest } from "../../../common/types/auth.types";
 import { OrderService } from "../services/order.service";
 import {
   createOrderSchema,
@@ -10,9 +10,7 @@ import {
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
-  public getAllOrders = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
-
+  public getAllOrders = catchAsync(async (req: AuthRequest, res: Response) => {
     const orders = await this.orderService.getAllOrders(req.user.id);
 
     res.status(200).json({
@@ -22,9 +20,7 @@ export class OrderController {
     });
   });
 
-  public getOrderById = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
-
+  public getOrderById = catchAsync(async (req: AuthRequest, res: Response) => {
     const validatedData = getOrderByIdSchema.parse(req);
     const { orderId } = validatedData.params;
 
@@ -37,9 +33,7 @@ export class OrderController {
   });
 
   public createOrderFromCart = catchAsync(
-    async (req: Request, res: Response) => {
-      assertAuth(req);
-
+    async (req: AuthRequest, res: Response) => {
       const validatedData = createOrderSchema.parse(req);
       const { addressId } = validatedData.body;
 

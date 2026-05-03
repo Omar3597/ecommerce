@@ -13,14 +13,12 @@ import {
   toCategoriesResponse,
   toCategoryResponse,
 } from "../dtos/category.dto";
-import { assertAuth } from "../../../common/guards/assertAuth";
+import { AuthRequest } from "../../../common/types/auth.types";
 
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
-  public createCategory = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
-
+  public createCategory = catchAsync(async (req: AuthRequest, res: Response) => {
     const validatedData = createCategorySchema.parse(req);
 
     const category = await this.categoryService.createCategory(
@@ -88,9 +86,7 @@ export class CategoryController {
     },
   );
 
-  public updateCategory = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
-
+  public updateCategory = catchAsync(async (req: AuthRequest, res: Response) => {
     const validatedData = updateCategorySchema.parse(req);
     const { categoryId } = validatedData.params;
 
@@ -109,9 +105,7 @@ export class CategoryController {
     });
   });
 
-  public deleteCategory = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
-
+  public deleteCategory = catchAsync(async (req: AuthRequest, res: Response) => {
     const validatedData = deleteCategorySchema.parse(req);
     const { categoryId } = validatedData.params;
 

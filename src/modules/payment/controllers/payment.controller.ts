@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { assertAuth } from "../../../common/guards/assertAuth";
+import { AuthRequest } from "../../../common/types/auth.types";
 import { catchAsync } from "../../../common/middlewares/catchAsync";
 import {
   type CreatePaymentSessionInput,
@@ -13,9 +13,7 @@ export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
   public createPaymentSession = catchAsync(
-    async (req: Request, res: Response) => {
-      assertAuth(req);
-
+    async (req: AuthRequest, res: Response) => {
       const validatedData: CreatePaymentSessionInput =
         createPaymentSessionSchema.parse(req);
       const { orderId } = validatedData.params;

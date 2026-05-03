@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { catchAsync } from "../../../common/middlewares/catchAsync";
-import { assertAuth } from "../../../common/guards/assertAuth";
+import { AuthRequest } from "../../../common/types/auth.types";
 import { ReviewService } from "../services/review.service";
 import {
   createReviewSchema,
@@ -34,9 +34,7 @@ export class ReviewController {
     });
   });
 
-  public createReview = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
-
+  public createReview = catchAsync(async (req: AuthRequest, res: Response) => {
     const validatedData = createReviewSchema.parse({
       params: req.params,
       body: req.body,
@@ -54,9 +52,7 @@ export class ReviewController {
     });
   });
 
-  public updateReview = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
-
+  public updateReview = catchAsync(async (req: AuthRequest, res: Response) => {
     const validatedData = updateReviewSchema.parse({
       params: req.params,
       body: req.body,
@@ -77,9 +73,7 @@ export class ReviewController {
     });
   });
 
-  public deleteReview = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
-
+  public deleteReview = catchAsync(async (req: AuthRequest, res: Response) => {
     const validatedData = deleteReviewSchema.parse({ params: req.params });
 
     await this.reviewService.deleteReview({
@@ -94,9 +88,7 @@ export class ReviewController {
   });
 
   public getUserReviewsOnProducts = catchAsync(
-    async (req: Request, res: Response) => {
-      assertAuth(req);
-
+    async (req: AuthRequest, res: Response) => {
       const result = await this.reviewService.getUserReviewsOnProducts(
         req.user.id,
         req.query,

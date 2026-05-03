@@ -1,7 +1,7 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { UserService } from "../services/user.service";
 import { catchAsync } from "../../../common/middlewares/catchAsync";
-import { assertAuth } from "../../../common/guards/assertAuth";
+import { AuthRequest } from "../../../common/types/auth.types";
 import {
   requestEmailChangeSchema,
   updateProfileSchema,
@@ -13,9 +13,8 @@ import { toPublicUser } from "../dtos/user.dto";
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  public updateProfile = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
-
+  public updateProfile = catchAsync(async (req: AuthRequest, res: Response) => {
+    
     const validatedData = updateProfileSchema.parse(req);
 
     const user = await this.userService.updateProfile(
@@ -29,18 +28,16 @@ export class UserController {
     });
   });
 
-  public getMe = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
-
+  public getMe = catchAsync(async (req: AuthRequest, res: Response) => {
+    
     res.status(200).json({
       status: "success",
       data: { user: toPublicUser(req.user) },
     });
   });
 
-  public updatePassword = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
-
+  public updatePassword = catchAsync(async (req: AuthRequest, res: Response) => {
+    
     const validatedData = updatePasswordSchema.parse(req);
 
     await this.userService.updatePassword(req.user, validatedData.body);
@@ -53,9 +50,8 @@ export class UserController {
   });
 
   public requestEmailChange = catchAsync(
-    async (req: Request, res: Response) => {
-      assertAuth(req);
-
+    async (req: AuthRequest, res: Response) => {
+      
       const validatedData = requestEmailChangeSchema.parse(req);
 
       await this.userService.requestEmailChange(req.user, validatedData.body);
@@ -67,9 +63,8 @@ export class UserController {
     },
   );
 
-  public verifyEmailChange = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
-
+  public verifyEmailChange = catchAsync(async (req: AuthRequest, res: Response) => {
+    
     const validatedData = verifyEmailChangeSchema.parse(req);
 
     await this.userService.verifyEmailChange(req.user, validatedData.params);

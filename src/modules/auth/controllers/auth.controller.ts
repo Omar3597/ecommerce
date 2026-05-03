@@ -10,7 +10,7 @@ import {
   refreshTokenSchema,
 } from "../validators/auth.validator";
 import { toPublicUser } from "../dtos/auth.dto";
-import { assertAuth } from "../../../common/guards/assertAuth";
+import { AuthRequest } from "../../../common/types/auth.types";
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -120,9 +120,7 @@ export class AuthController {
     });
   });
 
-  public logout = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
-
+  public logout = catchAsync(async (req: AuthRequest, res: Response) => {
     const validatedData = refreshTokenSchema.parse(req);
 
     const { refreshToken } = validatedData.cookies;
@@ -134,9 +132,7 @@ export class AuthController {
   });
 
   public logoutFromAllDevices = catchAsync(
-    async (req: Request, res: Response) => {
-      assertAuth(req);
-
+    async (req: AuthRequest, res: Response) => {
       await this.authService.logoutFromAllDevices(req.user.id);
       this.clearRefreshTokenCookie(res);
 

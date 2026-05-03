@@ -1,17 +1,15 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { catchAsync } from "../../../common/middlewares/catchAsync";
 import { statsQuerySchema } from "../validators/dashboard.validator";
 import { parseInterval } from "../utils/dashboard.parser";
 import { DashboardService } from "../services/dashboard.service";
-import { assertAuth } from "../../../common/guards/assertAuth";
+import { AuthRequest } from "../../../common/types/auth.types";
 import { toStatsResponse } from "../dtos/dashboard.dto";
 
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
-  public getStats = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
-
+  public getStats = catchAsync(async (req: AuthRequest, res: Response) => {
     const { query } = statsQuerySchema.parse({ query: req.query });
 
     const interval = parseInterval(query);

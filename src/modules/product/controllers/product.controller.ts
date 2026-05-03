@@ -15,15 +15,14 @@ import {
   toPublicProductDetails,
 } from "../dtos/product.dto";
 import { getConfig } from "../../../config/env";
-import { assertAuth } from "../../../common/guards/assertAuth";
+import { AuthRequest } from "../../../common/types/auth.types";
 
 const config = getConfig();
 
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
-  public createProduct = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
+  public createProduct = catchAsync(async (req: AuthRequest, res: Response) => {
     const validatedData = createProductSchema.parse(req);
 
     const product = await this.productService.createProduct(
@@ -66,8 +65,7 @@ export class ProductController {
     },
   );
 
-  public updateProduct = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
+  public updateProduct = catchAsync(async (req: AuthRequest, res: Response) => {
     const validatedData = updateProductSchema.parse(req);
     const { productId } = validatedData.params;
 
@@ -86,8 +84,7 @@ export class ProductController {
     });
   });
 
-  public deleteProduct = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
+  public deleteProduct = catchAsync(async (req: AuthRequest, res: Response) => {
     const validatedData = deleteProductSchema.parse(req);
     const { productId } = validatedData.params;
 
@@ -129,8 +126,7 @@ export class ProductController {
     },
   );
 
-  public uploadImages = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
+  public uploadImages = catchAsync(async (req: AuthRequest, res: Response) => {
     const validatedData = uploadImagesSchema.parse(req);
     const files = validatedData.files as Express.Multer.File[];
     const buffers = files.map((f) => f.buffer);
@@ -149,8 +145,7 @@ export class ProductController {
     });
   });
 
-  public deleteImage = catchAsync(async (req: Request, res: Response) => {
-    assertAuth(req);
+  public deleteImage = catchAsync(async (req: AuthRequest, res: Response) => {
     const validatedData = deleteImageSchema.parse(req);
     const { publicId } = validatedData.params;
 

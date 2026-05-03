@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { AuthController } from "../controllers/auth.controller";
 import { AuthService } from "../services/auth.service";
-import { protect } from "../../../common/middlewares/protect";
+import { protect } from "../../../middlewares/protect";
 import { AuthRepo } from "../repositories/auth.repo";
-import { AuthEmailTokenService } from "../../../common/services/emailToken.service";
+import { AuthEmailTokenService } from "../../../shared/services/emailToken.service";
 import { prisma } from "../../../lib/prisma";
 
 const authRouter = Router();

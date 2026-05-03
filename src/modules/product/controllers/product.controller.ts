@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { ProductService } from "../services/product.service";
-import { catchAsync } from "../../../common/middlewares/catchAsync";
+import { catchAsync } from "../../../middlewares/catchAsync";
 import {
   createProductSchema,
   deleteImageSchema,
@@ -15,7 +15,7 @@ import {
   toPublicProductDetails,
 } from "../dtos/product.dto";
 import { getConfig } from "../../../config/env";
-import { AuthRequest } from "../../../common/types/auth.types";
+import { AuthRequest } from "../../../shared/types/auth.types";
 
 const config = getConfig();
 

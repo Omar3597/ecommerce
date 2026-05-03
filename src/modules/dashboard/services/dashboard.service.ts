@@ -1,7 +1,7 @@
 import baseLogger from "../../../config/logger";
 import { ParsedInterval } from "../utils/dashboard.parser";
 import { DashboardRepo } from "../repositories/dashboard.repo";
-import cacheService from "../../../common/services/cache.service";
+import cacheService from "../../../shared/services/cache.service";
 
 export class DashboardService {
   private logger = baseLogger.child({ module: "dashboard" });

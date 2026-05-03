@@ -1,4 +1,4 @@
-import AppError from "../../../common/utils/appError";
+import AppError from "../../../shared/errors/appError";
 
 export type Role = "USER" | "ADMIN" | "MANAGER";
 

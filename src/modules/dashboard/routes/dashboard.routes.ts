@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authorize } from "../../../common/middlewares/authorize";
+import { authorize } from "../../../middlewares/authorize";
 import { DashboardService } from "../services/dashboard.service";
 import { DashboardController } from "../controllers/dashboard.controller";
 

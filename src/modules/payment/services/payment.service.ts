@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import AppError from "../../../common/utils/appError";
+import AppError from "../../../shared/errors/appError";
 import { getConfig } from "../../../config/env";
 import { PaymentRepo } from "../repositories/payment.repo";
 import baseLogger from "../../../config/logger";

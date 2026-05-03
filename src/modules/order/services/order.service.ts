@@ -1,4 +1,4 @@
-import AppError from "../../../common/utils/appError";
+import AppError from "../../../shared/errors/appError";
 import { OrderRepo } from "../repositories/order.repo";
 import baseLogger from "../../../config/logger";
 

@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import AppError from "../../../common/utils/appError";
+import AppError from "../../../shared/errors/appError";
 import {
   SignupInput,
   LoginInput,
@@ -10,7 +10,7 @@ import crypto from "crypto";
 import {
   AuthEmailTokenService,
   EmailTokenType,
-} from "../../../common/services/emailToken.service";
+} from "../../../shared/services/emailToken.service";
 import { AuthRepo } from "../repositories/auth.repo";
 import { getConfig } from "../../../config/env";
 import baseLogger from "../../../config/logger";

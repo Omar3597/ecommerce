@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authorize } from "../../../common/middlewares/authorize";
+import { authorize } from "../../../middlewares/authorize";
 import { CategoryService } from "../services/category.service";
 import { CategoryController } from "../controllers/category.controller";
 import { CategoryRepo } from "../repositories/category.repo";

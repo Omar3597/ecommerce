@@ -2,7 +2,7 @@ import { Router } from "express";
 import { ReviewController } from "../controllers/review.controller";
 import { ReviewService } from "../services/review.service";
 import { ReviewRepo } from "../repositories/review.repo";
-import { protect } from "../../../common/middlewares/protect";
+import { protect } from "../../../middlewares/protect";
 
 const reviewRepo = new ReviewRepo();
 const reviewService = new ReviewService(reviewRepo);

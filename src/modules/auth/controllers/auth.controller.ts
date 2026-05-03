@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { AuthService } from "../services/auth.service";
-import { catchAsync } from "../../../common/middlewares/catchAsync";
+import { catchAsync } from "../../../middlewares/catchAsync";
 import {
   signupSchema,
   loginSchema,
@@ -10,7 +10,7 @@ import {
   refreshTokenSchema,
 } from "../validators/auth.validator";
 import { toPublicUser } from "../dtos/auth.dto";
-import { AuthRequest } from "../../../common/types/auth.types";
+import { AuthRequest } from "../../../shared/types/auth.types";
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

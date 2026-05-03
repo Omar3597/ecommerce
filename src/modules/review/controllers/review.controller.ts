@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { catchAsync } from "../../../common/middlewares/catchAsync";
-import { AuthRequest } from "../../../common/types/auth.types";
+import { catchAsync } from "../../../middlewares/catchAsync";
+import { AuthRequest } from "../../../shared/types/auth.types";
 import { ReviewService } from "../services/review.service";
 import {
   createReviewSchema,

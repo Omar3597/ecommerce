@@ -1,6 +1,6 @@
 import { getConfig } from "./config/env";
 import app from "./app";
-import { initCronJobs } from "./common/jobs/cron";
+import { initCronJobs } from "./shared/jobs/cron";
 import logger from "./config/logger";
 
 initCronJobs();

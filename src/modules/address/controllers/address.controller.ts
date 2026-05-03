@@ -1,6 +1,6 @@
 import { Response } from "express";
-import { catchAsync } from "../../../common/middlewares/catchAsync";
-import { AuthRequest } from "../../../common/types/auth.types";
+import { catchAsync } from "../../../middlewares/catchAsync";
+import { AuthRequest } from "../../../shared/types/auth.types";
 import { AddressService } from "../services/address.service";
 import {
   createAddressSchema,

@@ -1,9 +1,9 @@
 import { Response } from "express";
-import { catchAsync } from "../../../common/middlewares/catchAsync";
+import { catchAsync } from "../../../middlewares/catchAsync";
 import { statsQuerySchema } from "../validators/dashboard.validator";
 import { parseInterval } from "../utils/dashboard.parser";
 import { DashboardService } from "../services/dashboard.service";
-import { AuthRequest } from "../../../common/types/auth.types";
+import { AuthRequest } from "../../../shared/types/auth.types";
 import { toStatsResponse } from "../dtos/dashboard.dto";
 
 export class DashboardController {

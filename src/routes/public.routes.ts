@@ -8,7 +8,7 @@ import { reviewRouter } from "../modules/review";
 import { addressRouter } from "../modules/address";
 import { productReviewRouter } from "../modules/review";
 import { publicCategoryRouter } from "../modules/category";
-import { protect } from "../common/middlewares/protect";
+import { protect } from "../middlewares/protect";
 
 const publicRouter = Router();
 

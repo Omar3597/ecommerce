@@ -1,12 +1,12 @@
-import AppError from "../../../common/utils/appError";
+import AppError from "../../../shared/errors/appError";
 import {
   CreateProductInput,
   UpdateProductInput,
 } from "../validators/product.validator";
 import { ProductRepo } from "../repositories/product.repo";
-import { StorageService } from "../../../common/services/cloudinary.service";
+import { StorageService } from "../../../shared/services/cloudinary.service";
 import baseLogger from "../../../config/logger";
-import cacheService from "../../../common/services/cache.service";
+import cacheService from "../../../shared/services/cache.service";
 
 export class ProductService {
   private logger = baseLogger.child({ module: "product" });

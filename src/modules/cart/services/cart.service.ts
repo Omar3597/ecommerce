@@ -1,4 +1,4 @@
-import AppError from "../../../common/utils/appError";
+import AppError from "../../../shared/errors/appError";
 import { getConfig } from "../../../config/env";
 import { CartRepo } from "../repositories/cart.repo";
 

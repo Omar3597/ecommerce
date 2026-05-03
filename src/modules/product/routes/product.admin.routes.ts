@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { authorize } from "../../../common/middlewares/authorize";
+import { authorize } from "../../../middlewares/authorize";
 import { ProductService } from "../services/product.service";
 import { ProductController } from "../controllers/product.controller";
-import { upload } from "../../../common/middlewares/upload";
+import { upload } from "../../../middlewares/upload";
 
 const adminProductRouter = Router();
 

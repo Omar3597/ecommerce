@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-import { getConfig } from "../../config/env";
-import { prisma } from "../../lib/prisma";
-import { catchAsync } from "../../common/middlewares/catchAsync";
-import AppError from "../../common/utils/appError";
+import { getConfig } from "../config/env";
+import { prisma } from "../lib/prisma";
+import { catchAsync } from "./catchAsync";
+import AppError from "../shared/errors/appError";
 import jwt from "jsonwebtoken";
-import logger from "../../config/logger";
+import logger from "../config/logger";
 
 interface JwtPayload {
   id: string;

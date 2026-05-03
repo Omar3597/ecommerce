@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import AppError from "../../../common/utils/appError";
+import AppError from "../../../shared/errors/appError";
 import {
   CreateReviewInput,
   UpdateReviewInput,

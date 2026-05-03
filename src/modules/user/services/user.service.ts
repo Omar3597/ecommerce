@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import AppError from "../../../common/utils/appError";
+import AppError from "../../../shared/errors/appError";
 import {
   requestEmailChangeInput,
   updateProfileInput,
@@ -11,7 +11,7 @@ import crypto from "crypto";
 import {
   AuthEmailTokenService,
   EmailTokenType,
-} from "../../../common/services/emailToken.service";
+} from "../../../shared/services/emailToken.service";
 import { UserRepo } from "../repositories/user.repo";
 import baseLogger from "../../../config/logger";
 

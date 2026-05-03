@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { buildPrismaArgs } from "../../../common/query/query.engine";
+import { buildPrismaArgs } from "../../../shared/utils/query.engine";
 import { prisma } from "../../../lib/prisma";
 import {
   CreateReviewInput,

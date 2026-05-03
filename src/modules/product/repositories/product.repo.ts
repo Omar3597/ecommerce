@@ -1,5 +1,5 @@
 import { prisma } from "../../../lib/prisma";
-import { buildPrismaArgs } from "../../../common/query/query.engine";
+import { buildPrismaArgs } from "../../../shared/utils/query.engine";
 import { productQuery } from "../utils/product.query";
 import {
   CreateProductInput,

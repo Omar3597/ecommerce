@@ -3,9 +3,9 @@ import {
   permissions,
   type Resource,
   type Action,
-} from "../../config/authorization/permissions";
-import AppError from "../utils/appError";
-import logger from "../../config/logger";
+} from "../config/authorization/permissions";
+import AppError from "../shared/errors/appError";
+import logger from "../config/logger";
 
 export const authorize =
   (resource: Resource, action: Action) =>

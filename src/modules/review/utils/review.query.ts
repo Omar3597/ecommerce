@@ -1,4 +1,4 @@
-import { QueryConfig } from "../../../common/query/query.engine";
+import { QueryConfig } from "../../../shared/utils/query.engine";
 
 export const reviewsQuery: QueryConfig = {
   filter: {

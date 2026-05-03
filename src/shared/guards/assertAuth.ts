@@ -1,10 +1,6 @@
 import { Request } from "express";
-import { User } from "@prisma/client";
-import AppError from "../utils/appError";
-
-interface AuthRequest extends Request {
-  user: User;
-}
+import AppError from "../errors/appError";
+import { AuthRequest } from "../types/auth.types";
 
 export function assertAuth(req: Request): asserts req is AuthRequest {
   if (!req.user) {

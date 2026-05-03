@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
 import { getConfig } from "../../config/env.js";
-import AppError from "../utils/appError.js";
+import AppError from "./appError.js";
 import logger from "../../config/logger.js";
 
 const sendErrorDev = (err: AppError, res: Response) => {

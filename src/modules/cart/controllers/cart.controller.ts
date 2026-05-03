@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { CartService } from "../services/cart.service";
-import { catchAsync } from "../../../common/middlewares/catchAsync";
-import { AuthRequest } from "../../../common/types/auth.types";
+import { catchAsync } from "../../../middlewares/catchAsync";
+import { AuthRequest } from "../../../shared/types/auth.types";
 import { getCartDto, updateCartItemDto } from "../dtos/cart.dto";
 import {
   addProductToCartSchema,
@@ -13,7 +13,6 @@ export class CartController {
   constructor(private readonly cartService: CartService) {}
 
   public getCart = catchAsync(async (req: AuthRequest, res: Response) => {
-    
     const cart = await this.cartService.getCart(req.user.id);
 
     res.status(200).json({
@@ -23,7 +22,6 @@ export class CartController {
   });
 
   public addItem = catchAsync(async (req: AuthRequest, res: Response) => {
-    
     const validatedData = addProductToCartSchema.parse(req);
     const { productId } = validatedData.body;
 
@@ -36,7 +34,6 @@ export class CartController {
   });
 
   public updateItem = catchAsync(async (req: AuthRequest, res: Response) => {
-    
     const validated = updateCartItemSchema.parse(req);
     const { itemId } = validated.params;
     const { quantity } = validated.body;
@@ -54,7 +51,6 @@ export class CartController {
   });
 
   public removeItem = catchAsync(async (req: AuthRequest, res: Response) => {
-    
     const validatedData = removeCartItemSchema.parse(req);
     const { itemId } = validatedData.params;
 
@@ -64,7 +60,6 @@ export class CartController {
   });
 
   public clearCart = catchAsync(async (req: AuthRequest, res: Response) => {
-    
     await this.cartService.clearCart(req.user.id);
     res.status(204).send();
   });

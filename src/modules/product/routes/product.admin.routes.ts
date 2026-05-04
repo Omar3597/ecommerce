@@ -3,10 +3,12 @@ import { authorize } from "../../../middlewares/authorize";
 import { ProductService } from "../services/product.service";
 import { ProductController } from "../controllers/product.controller";
 import { upload } from "../../../middlewares/upload";
+import { ProductRepo } from "../repositories/product.repo";
+import { cacheAdapter } from "../../../infra/cache";
 
 const adminProductRouter = Router();
-
-const productService = new ProductService();
+const productRepo = new ProductRepo();
+const productService = new ProductService(productRepo, cacheAdapter);
 const productController = new ProductController(productService);
 
 adminProductRouter.get(

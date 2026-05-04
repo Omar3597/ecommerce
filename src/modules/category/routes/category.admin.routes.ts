@@ -3,11 +3,12 @@ import { authorize } from "../../../middlewares/authorize";
 import { CategoryService } from "../services/category.service";
 import { CategoryController } from "../controllers/category.controller";
 import { CategoryRepo } from "../repositories/category.repo";
+import { cacheAdapter } from "../../../infra/cache";
 
 const adminCategoryRouter = Router();
 
 const categoryRepo = new CategoryRepo();
-const categoryService = new CategoryService(categoryRepo);
+const categoryService = new CategoryService(categoryRepo, cacheAdapter);
 const categoryController = new CategoryController(categoryService);
 
 adminCategoryRouter.get(

@@ -100,7 +100,7 @@ export class ProductController {
     const validatedData = getProductSchema.parse(req);
     const { productId } = validatedData.params;
 
-    const product = await this.productService.getProductById(productId);
+    const product = await this.productService.getPublicProductById(productId);
     const publicProduct = toPublicProductDetails(
       product,
       config.MAX_CART_QUANTITY,
@@ -117,7 +117,7 @@ export class ProductController {
       const validatedData = getProductSchema.parse(req);
       const { productId } = validatedData.params;
 
-      const product = await this.productService.getProductById(productId, true);
+      const product = await this.productService.getAdminProductById(productId);
 
       res.status(200).json({
         status: "success",

@@ -5,6 +5,7 @@ import {
 } from "../validators/category.validator";
 import { CategoryRepo } from "../repositories/category.repo";
 import baseLogger from "../../../config/logger";
+import { ICacheService } from "../../../infra/cache";
 
 const slugify = (value: string) =>
   value
@@ -17,7 +18,10 @@ const slugify = (value: string) =>
 export class CategoryService {
   private logger = baseLogger.child({ module: "category" });
 
-  constructor(private readonly categoryRepo: CategoryRepo) {}
+  constructor(
+    private readonly categoryRepo: CategoryRepo,
+    private readonly cacheAdapter: ICacheService,
+  ) {}
 
   private async createUniqueSlug(baseSlug: string, excludedId?: string) {
     let nextSlug = baseSlug;
@@ -66,15 +70,37 @@ export class CategoryService {
     return category;
   }
 
-  async getAllCategories(includeHidden = false) {
-    return this.categoryRepo.findAllCategories(includeHidden);
+  async getPublicCatigories() {
+    return this.cacheAdapter.wrap(
+      "categories:public",
+      600, // 10 minutes
+      () => this.categoryRepo.findAllCategories(false),
+    );
   }
 
-  async getCategoryById(categoryId: string, includeHidden = false) {
+  async getAdminCategories() {
+    return this.cacheAdapter.wrap(
+      "categories:admin",
+      600, // 10 minutes
+      () => this.categoryRepo.findAllCategories(true),
+    );
+  }
+
+  async getPublicCategoryById(categoryId: string) {
     const category = await this.categoryRepo.findCategoryById(
       categoryId,
-      includeHidden,
+      false,
     );
+
+    if (!category) {
+      throw new AppError(404, "Category is not found");
+    }
+
+    return category;
+  }
+
+  async getAdminCategoryById(categoryId: string) {
+    const category = await this.categoryRepo.findCategoryById(categoryId, true);
 
     if (!category) {
       throw new AppError(404, "Category is not found");

@@ -57,6 +57,14 @@ class CacheAdapter implements ICacheService {
     }
   }
 
+  async flushAll(): Promise<void> {
+    try {
+      await cacheRedis.flushall();
+    } catch (err) {
+      logger.error({ err }, "Cache flushAll: error");
+    }
+  }
+
   async invalidatePattern(pattern: string): Promise<void> {
     try {
       let cursor = "0";

@@ -7,14 +7,14 @@ import {
   seedDashboardData,
 } from "../utils/testHelpers";
 import { Role } from "@prisma/client";
-import redisClient from "../../src/config/redis";
+import { cacheAdapter } from "../../src/infra/cache";
 
 // ─── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("Dashboard Integration Tests", () => {
   beforeEach(async () => {
     await resetDatabase();
-    await redisClient.flushall();
+    await cacheAdapter.flushAll();
   });
 
   // ── 1. Access Control ───────────────────────────────────────────────────────

@@ -38,7 +38,7 @@ export class CategoryController {
   );
 
   public getAllCategories = catchAsync(async (_req: Request, res: Response) => {
-    const categories = await this.categoryService.getAllCategories();
+    const categories = await this.categoryService.getPublicCatigories();
 
     res.status(200).json({
       status: "success",
@@ -49,7 +49,7 @@ export class CategoryController {
 
   public getAllCategoriesAdmin = catchAsync(
     async (_req: Request, res: Response) => {
-      const categories = await this.categoryService.getAllCategories(true);
+      const categories = await this.categoryService.getAdminCategories();
 
       res.status(200).json({
         status: "success",
@@ -63,7 +63,7 @@ export class CategoryController {
     const validatedData = getCategorySchema.parse(req);
     const { categoryId } = validatedData.params;
 
-    const category = await this.categoryService.getCategoryById(categoryId);
+    const category = await this.categoryService.getPublicCategoryById(categoryId);
 
     res.status(200).json({
       status: "success",
@@ -76,10 +76,7 @@ export class CategoryController {
       const validatedData = getCategorySchema.parse(req);
       const { categoryId } = validatedData.params;
 
-      const category = await this.categoryService.getCategoryById(
-        categoryId,
-        true,
-      );
+      const category = await this.categoryService.getAdminCategoryById(categoryId);
 
       res.status(200).json({
         status: "success",

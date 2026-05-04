@@ -3,7 +3,7 @@ export interface ICacheService {
   get<T>(key: string): Promise<T | null>;
   set<T>(key: string, value: T, ttl: number): Promise<void>;
   del(key: string): Promise<void>;
-
+  flushAll(): Promise<void>;
   /** Deletes every key that matches a glob pattern (uses SCAN). */
   invalidatePattern(pattern: string): Promise<void>;
 }

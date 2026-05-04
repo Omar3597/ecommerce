@@ -127,10 +127,23 @@ export class ProductService {
     }
   }
 
-  async getProductById(productId: string, includeHidden = false) {
+  async getPublicProductById(productId: string) {
     const product = await this.productRepo.findProductDetailsById(
       productId,
-      includeHidden,
+      false,
+    );
+
+    if (!product) {
+      throw new AppError(404, "Product is not found");
+    }
+
+    return product;
+  }
+
+  async getAdminProductById(productId: string) {
+    const product = await this.productRepo.findProductDetailsById(
+      productId,
+      true,
     );
 
     if (!product) {

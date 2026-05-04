@@ -3,7 +3,7 @@ import { getConfig } from "../config/env";
 import { prisma } from "../lib/prisma";
 import { catchAsync } from "./catchAsync";
 import AppError from "../shared/errors/appError";
-import cacheService from "../shared/services/cache.service";
+import { cacheAdapter } from "../infra/cache";
 import jwt from "jsonwebtoken";
 import logger from "../config/logger";
 import type { User } from "@prisma/client";
@@ -40,7 +40,7 @@ function verifyAccessToken(token: string): JwtPayload {
 }
 
 async function fetchAuthUser(userId: string): Promise<User | null> {
-  const user = await cacheService.wrap<User | null>(
+  const user = await cacheAdapter.wrap<User | null>(
     authUserCacheKey(userId),
     AUTH_USER_CACHE_TTL,
     () =>

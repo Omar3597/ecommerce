@@ -1,7 +1,8 @@
-import { cacheRedis } from "../../infra/cache";
+import { cacheRedis } from "./cache.client";
 import logger from "../../config/logger";
+import type { ICacheService } from "./cache.interface";
 
-class CacheService {
+class CacheAdapter implements ICacheService {
   async wrap<T>(
     key: string,
     ttl: number,
@@ -18,10 +19,12 @@ class CacheService {
 
     const result = await fetchFn();
 
-    try {
-      await cacheRedis.set(key, JSON.stringify(result), "EX", ttl);
-    } catch (err) {
-      logger.error({ err, key }, "Cache wrap: write error");
+    if (result !== null && result !== undefined) {
+      try {
+        await cacheRedis.set(key, JSON.stringify(result), "EX", ttl);
+      } catch (err) {
+        logger.error({ err, key }, "Cache wrap: write error");
+      }
     }
 
     return result;
@@ -79,6 +82,6 @@ class CacheService {
   }
 }
 
-const cacheService = new CacheService();
+const cacheAdapter: ICacheService = new CacheAdapter();
 
-export default cacheService;
+export default cacheAdapter;

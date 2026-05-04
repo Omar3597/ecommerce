@@ -1,12 +1,15 @@
 import baseLogger from "../../../config/logger";
 import { ParsedInterval } from "../utils/dashboard.parser";
 import { DashboardRepo } from "../repositories/dashboard.repo";
-import cacheService from "../../../shared/services/cache.service";
+import type { ICacheService } from "../../../infra/cache";
 
 export class DashboardService {
   private logger = baseLogger.child({ module: "dashboard" });
 
-  constructor(private readonly repo: DashboardRepo = new DashboardRepo()) {}
+  constructor(
+    private readonly repo: DashboardRepo,
+    private readonly cache: ICacheService,
+  ) {}
 
   async getStats(
     interval: ParsedInterval,
@@ -28,7 +31,7 @@ export class DashboardService {
 
     const cacheKey = `dashboard:stats:${roundTime(interval.from)}:${roundTime(interval.to)}`;
 
-    return cacheService.wrap(cacheKey, 900, async () => {
+    return this.cache.wrap(cacheKey, 900, async () => {
       // 900s = 15 minutes
       const [
         [currentPeriod, previousPeriod, newUsers],

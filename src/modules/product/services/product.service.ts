@@ -6,11 +6,14 @@ import {
 import { ProductRepo } from "../repositories/product.repo";
 import { StorageService } from "../../../shared/services/cloudinary.service";
 import baseLogger from "../../../config/logger";
-import cacheService from "../../../shared/services/cache.service";
+import type { ICacheService } from "../../../infra/cache";
 
 export class ProductService {
   private logger = baseLogger.child({ module: "product" });
-  constructor(private readonly productRepo: ProductRepo = new ProductRepo()) {}
+  constructor(
+    private readonly productRepo: ProductRepo,
+    private readonly cache: ICacheService,
+  ) {}
 
   async getPublicProducts(reqQuery: Record<string, any>) {
     const { page = 1, limit = 20, sort, filter } = reqQuery;
@@ -19,7 +22,7 @@ export class ProductService {
       Number(page) === 1 && Number(limit) === 20 && !filter && !sort;
     if (!isCacheable) return this.productRepo.findProducts(reqQuery, false);
 
-    return cacheService.wrap(
+    return this.cache.wrap(
       `products:page:${page}`,
       300, // 5 minutes
       () => this.productRepo.findProducts(reqQuery, false),

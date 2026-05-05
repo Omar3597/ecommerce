@@ -24,11 +24,15 @@ interface IConfig {
   REDIS_PORT: number;
   REDIS_PASSWORD: string;
 
-  // Third-party
-  MAIL_HOST: string;
-  MAIL_PORT: number;
-  MAIL_USER: string;
-  MAIL_PASSWORD: string;
+  // Email
+  EMAIL_PROVIDER: "brevo" | "mailtrap";
+  MAILTRAP_HOST: string;
+  MAILTRAP_PORT: number;
+  MAILTRAP_USER: string;
+  MAILTRAP_PASS: string;
+  BREVO_API_KEY: string;
+  EMAIL_FROM_NAME: string;
+  EMAIL_FROM_ADDRESS: string;
   STRIPE_SECRET_KEY: string;
   STRIPE_WEBHOOK_SECRET: string;
   STRIPE_SUCCESS_URL: string;
@@ -86,10 +90,14 @@ export const getConfig = (): IConfig => {
         "REDIS_HOST",
         "REDIS_PORT",
         "REDIS_PASSWORD",
-        "MAIL_HOST",
-        "MAIL_PORT",
-        "MAIL_USER",
-        "MAIL_PASSWORD",
+        "EMAIL_PROVIDER",
+        "MAILTRAP_HOST",
+        "MAILTRAP_PORT",
+        "MAILTRAP_USER",
+        "MAILTRAP_PASS",
+        "BREVO_API_KEY",
+        "EMAIL_FROM_NAME",
+        "EMAIL_FROM_ADDRESS",
         "STRIPE_SECRET_KEY",
         "STRIPE_WEBHOOK_SECRET",
         "STRIPE_SUCCESS_URL",
@@ -122,11 +130,15 @@ export const getConfig = (): IConfig => {
     MAX_CART_QUANTITY: parseInt(processEnv.MAX_CART_QUANTITY!, 10),
     MAX_ACTIVE_SESSIONS: parseInt(processEnv.MAX_ACTIVE_SESSIONS!, 10),
 
-    // Third-party with safe defaults for 'test'
-    MAIL_HOST: processEnv.MAIL_HOST ?? "localhost",
-    MAIL_PORT: parseInt(processEnv.MAIL_PORT ?? "1025", 10),
-    MAIL_USER: processEnv.MAIL_USER ?? "",
-    MAIL_PASSWORD: processEnv.MAIL_PASSWORD ?? "",
+    // Email with safe defaults for 'test'
+    EMAIL_PROVIDER: (processEnv.EMAIL_PROVIDER as "brevo" | "mailtrap") ?? "mailtrap",
+    MAILTRAP_HOST: processEnv.MAILTRAP_HOST ?? "localhost",
+    MAILTRAP_PORT: parseInt(processEnv.MAILTRAP_PORT ?? "1025", 10),
+    MAILTRAP_USER: processEnv.MAILTRAP_USER ?? "",
+    MAILTRAP_PASS: processEnv.MAILTRAP_PASS ?? "",
+    BREVO_API_KEY: processEnv.BREVO_API_KEY ?? "",
+    EMAIL_FROM_NAME: processEnv.EMAIL_FROM_NAME ?? "E-Commerce",
+    EMAIL_FROM_ADDRESS: processEnv.EMAIL_FROM_ADDRESS ?? "noreply@ecommerce.com",
 
     STRIPE_SECRET_KEY: processEnv.STRIPE_SECRET_KEY ?? "sk_test_dummy",
     STRIPE_WEBHOOK_SECRET: processEnv.STRIPE_WEBHOOK_SECRET ?? "whsec_dummy",

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .btn { display: inline-block; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Invoice for Order #<%= orderId %></h2>
+        <p>Hello <%= name %>,</p>
+        <p>Thank you for your payment. Your order is confirmed.</p>
+        <p><strong>Payment ID:</strong> <%= paymentId %></p>
+        <p><strong>Amount Paid:</strong> <%= amount %> <%= currency %></p>
+        
+        <% if (locals.invoiceUrl) { %>
+        <p>
+            <a href="<%= invoiceUrl %>" class="btn">Download Invoice</a>
+        </p>
+        <% } %>
+        
+        <p>We're getting your order ready to be shipped.</p>
+    </div>
+</body>
+</html>

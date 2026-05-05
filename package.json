@@ -5,8 +5,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "worker:dev": "tsx watch src/workers/worker.server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "worker:prod": "node dist/workers/worker.server.js",
     "docker:dev": "docker-compose -f docker-compose.dev.yml up -d",
     "docker:dev:down": "docker-compose -f docker-compose.dev.yml down",
     "db:seed:dev": "tsx src/seed/dev.seed.ts",

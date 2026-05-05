@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .btn { display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Hello <%= name %>,</h2>
+        <p>Please verify your email address by clicking the link below:</p>
+        <p>
+            <a href="<%= verifyUrl %>" class="btn">Verify Email Address</a>
+        </p>
+        <p>This link will expire in <%= expiresInMinutes %> minutes.</p>
+        <p>If you didn't request this verification, you can safely ignore this email.</p>
+    </div>
+</body>
+</html>

@@ -9,7 +9,6 @@ export const EVENT_NAMES = {
     COMPLETED: "payment.completed",
   },
   PRODUCT: {
-    IMAGE_ADDED: "product.image_added",
     IMAGE_REMOVED: "product.image_removed",
     DELETED: "product.deleted",
   },

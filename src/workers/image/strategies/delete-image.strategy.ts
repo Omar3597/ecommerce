@@ -4,9 +4,9 @@ import { CloudStorageService } from "../../../shared/services/cloudStorage/cloud
 import { ProductImageRemovedPayload } from "../../../events";
 
 export class DeleteImageStrategy implements IImageStrategy {
-  constructor(private cloudinaryService: CloudStorageService) {}
+  constructor(private cloudStorageService: CloudStorageService) {}
 
   async execute(job: Job<ProductImageRemovedPayload>): Promise<void> {
-    await this.cloudinaryService.deleteImage(job.data);
+    await this.cloudStorageService.deleteImage(job.data);
   }
 }

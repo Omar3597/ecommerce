@@ -5,6 +5,7 @@ import { QUEUE_NAMES, JOB_NAMES } from "../../infra/queue";
 import { IImageStrategy } from "./image.strategy.interface";
 import { DeleteImageStrategy } from "./strategies/delete-image.strategy";
 import { BulkDeleteImageStrategy } from "./strategies/bulk-delete-image.strategy";
+import { CloudStorageService } from "../../shared/services/cloudStorage/cloudStorage.service";
 
 export class ImageWorker implements IWorker {
   private worker?: Worker;
@@ -12,15 +13,15 @@ export class ImageWorker implements IWorker {
 
   constructor(
     private workerFactory: WorkerFactory,
-    private cloudinaryService: any,
+    private cloudStorageService: CloudStorageService,
   ) {
     this.strategies.set(
       JOB_NAMES.IMAGE.DELETE,
-      new DeleteImageStrategy(this.cloudinaryService),
+      new DeleteImageStrategy(this.cloudStorageService),
     );
     this.strategies.set(
       JOB_NAMES.IMAGE.BULK_DELETE,
-      new BulkDeleteImageStrategy(this.cloudinaryService),
+      new BulkDeleteImageStrategy(this.cloudStorageService),
     );
   }
 

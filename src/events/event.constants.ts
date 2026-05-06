@@ -12,4 +12,8 @@ export const EVENT_NAMES = {
     IMAGE_REMOVED: "product.image_removed",
     DELETED: "product.deleted",
   },
+  ORDER: {
+    CREATED: "order.created",
+    CANCELLED: "order.cancelled",
+  },
 } as const;

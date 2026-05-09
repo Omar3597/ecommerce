@@ -13,8 +13,8 @@ export class PaymentSubscriber {
   public register(): void {
     this.eventBus.on(
       EVENT_NAMES.PAYMENT.COMPLETED,
-      (payload: PaymentCompletedPayload) => {
-        this.emailQueue.add(JOB_NAMES.EMAIL.INVOICE, payload);
+      async (payload: PaymentCompletedPayload) => {
+        await this.emailQueue.add(JOB_NAMES.EMAIL.INVOICE, payload);
       },
     );
   }

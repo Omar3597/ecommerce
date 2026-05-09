@@ -16,28 +16,31 @@ export class UserSubscriber {
   ) {}
 
   public register(): void {
-    this.eventBus.on(EVENT_NAMES.USER.SIGNUP, (payload: UserSignupPayload) => {
-      this.emailQueue.add(JOB_NAMES.EMAIL.WELCOME_VERIFY, payload);
-    });
+    this.eventBus.on(
+      EVENT_NAMES.USER.SIGNUP,
+      async (payload: UserSignupPayload) => {
+        await this.emailQueue.add(JOB_NAMES.EMAIL.WELCOME_VERIFY, payload);
+      },
+    );
 
     this.eventBus.on(
       EVENT_NAMES.USER.REQUEST_VERIFY,
-      (payload: UserRequestVerifyPayload) => {
-        this.emailQueue.add(JOB_NAMES.EMAIL.VERIFICATION, payload);
+      async (payload: UserRequestVerifyPayload) => {
+        await this.emailQueue.add(JOB_NAMES.EMAIL.VERIFICATION, payload);
       },
     );
 
     this.eventBus.on(
       EVENT_NAMES.USER.FORGOT_PASSWORD,
-      (payload: UserForgotPasswordPayload) => {
-        this.emailQueue.add(JOB_NAMES.EMAIL.FORGOT_PASSWORD, payload);
+      async (payload: UserForgotPasswordPayload) => {
+        await this.emailQueue.add(JOB_NAMES.EMAIL.FORGOT_PASSWORD, payload);
       },
     );
 
     this.eventBus.on(
       EVENT_NAMES.USER.PASSWORD_CHANGED,
-      (payload: UserPasswordChangedPayload) => {
-        this.emailQueue.add(JOB_NAMES.EMAIL.PASSWORD_CHANGED, payload);
+      async (payload: UserPasswordChangedPayload) => {
+        await this.emailQueue.add(JOB_NAMES.EMAIL.PASSWORD_CHANGED, payload);
       },
     );
   }

@@ -4,12 +4,14 @@ import { WorkerFactory } from "../../infra/queue";
 import { QUEUE_NAMES, JOB_NAMES } from "../../infra/queue";
 import { EmailService } from "../../shared/services/email/email.service";
 import { IEmailStrategy } from "./email.strategy.interface";
-import { WelcomeVerifyEmailStrategy } from "./strategies/welcome-verify.strategy";
-import { VerifyEmailStrategy } from "./strategies/verify-email.strategy";
-import { ForgotPasswordEmailStrategy } from "./strategies/forgot-password.strategy";
-import { InvoiceEmailStrategy } from "./strategies/invoice.strategy";
-import { OrderCancelledEmailStrategy } from "./strategies/order-cancelled.strategy";
-import { PasswordChangedEmailStrategy } from "./strategies/password-changed.strategy";
+import {
+  WelcomeVerifyEmailStrategy,
+  VerifyEmailStrategy,
+  ForgotPasswordEmailStrategy,
+  InvoiceEmailStrategy,
+  OrderCancelledEmailStrategy,
+  PasswordChangedEmailStrategy,
+} from "./strategies";
 
 export class EmailWorker implements IWorker {
   private worker?: Worker;

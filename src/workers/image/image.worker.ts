@@ -3,9 +3,8 @@ import { IWorker } from "../../infra/queue";
 import { WorkerFactory } from "../../infra/queue";
 import { QUEUE_NAMES, JOB_NAMES } from "../../infra/queue";
 import { IImageStrategy } from "./image.strategy.interface";
-import { DeleteImageStrategy } from "./strategies/delete-image.strategy";
-import { BulkDeleteImageStrategy } from "./strategies/bulk-delete-image.strategy";
 import { CloudStorageService } from "../../shared/services/cloudStorage/cloudStorage.service";
+import { BulkDeleteImageStrategy, DeleteImageStrategy } from "./strategies";
 
 export class ImageWorker implements IWorker {
   private worker?: Worker;

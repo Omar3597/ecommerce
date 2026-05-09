@@ -51,6 +51,10 @@ export interface OrderCancelledPayload {
   name: string;
 }
 
+export interface OrderExpirePayload {
+  orderId: string;
+}
+
 export interface PaymentCompletedPayload {
   paymentId: string;
   orderId: string;

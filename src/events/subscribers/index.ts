@@ -17,7 +17,7 @@ export const bootstrapSubscribers = (
   const userSubscriber = new UserSubscriber(eventBus, emailQueue);
   const paymentSubscriber = new PaymentSubscriber(eventBus, emailQueue);
   const productSubscriber = new ProductSubscriber(eventBus, imageQueue);
-  const orderSubscriber = new OrderSubscriber(eventBus, orderQueue);
+  const orderSubscriber = new OrderSubscriber(eventBus, orderQueue, emailQueue);
 
   userSubscriber.register();
   paymentSubscriber.register();

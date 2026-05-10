@@ -7,7 +7,7 @@ export class VerifyEmailStrategy implements IEmailStrategy {
   constructor(private emailService: EmailService) {}
 
   async execute(job: Job<UserRequestVerifyPayload>): Promise<void> {
+    console.log("Executing VerifyEmailStrategy ...");
     await this.emailService.sendVerification(job.data);
   }
 }
-

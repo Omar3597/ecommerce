@@ -7,6 +7,7 @@ export class OrderCancelledEmailStrategy implements IEmailStrategy {
   constructor(private emailService: EmailService) {}
 
   async execute(job: Job<OrderCancelledPayload>): Promise<void> {
+    console.log("Executing OrderCancelledEmailStrategy ...");
     await this.emailService.sendOrderCancelled(job.data);
   }
 }

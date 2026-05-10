@@ -7,6 +7,7 @@ export class ForgotPasswordEmailStrategy implements IEmailStrategy {
   constructor(private emailService: EmailService) {}
 
   async execute(job: Job<UserForgotPasswordPayload>): Promise<void> {
+    console.log("Executing ForgotPasswordEmailStrategy ...");
     await this.emailService.sendForgotPassword(job.data);
   }
 }

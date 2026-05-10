@@ -7,6 +7,7 @@ export class PasswordChangedEmailStrategy implements IEmailStrategy {
   constructor(private emailService: EmailService) {}
 
   async execute(job: Job<UserPasswordChangedPayload>): Promise<void> {
+    console.log("Executing PasswordChangedEmailStrategy ...");
     await this.emailService.sendPasswordChanged(job.data);
   }
 }

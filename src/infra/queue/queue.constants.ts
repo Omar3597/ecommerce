@@ -24,7 +24,6 @@ export const JOB_NAMES = {
   },
   SCHEDULER: {
     CLEANUP_CARTS: "cleanup_carts",
-    CLEANUP_ORDERS: "cleanup_orders",
     CLEANUP_ORPHAN_IMAGES: "cleanup_orphan_images",
     CLEANUP_TOKENS: "cleanup_tokens",
     CLEANUP_USERS: "cleanup_users",

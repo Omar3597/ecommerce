@@ -54,6 +54,23 @@ services:
     ports:
       - "80:3000"
 
+  worker:
+    container_name: ecommerce_worker_prod
+    env_file:
+      - .env.production
+    build:
+      context: .
+      target: production
+    command: npm run worker:prod
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ecommerce_network
+
 networks:
   ecommerce_network:
     driver: bridge

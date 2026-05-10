@@ -16,19 +16,17 @@ export const JOB_NAMES = {
     PASSWORD_CHANGED: "password_changed",
   },
   IMAGE: {
-    UPLOAD: "upload",
     DELETE: "delete",
     BULK_DELETE: "bulk_delete",
   },
   ORDER: {
     EXPIRE: "expire",
-    SIMULATE_SHIPPING: "simulate_shipping",
   },
   SCHEDULER: {
     CLEANUP_CARTS: "cleanup_carts",
-    CLEANUP_ORDERS: "cleanup_orders",
     CLEANUP_ORPHAN_IMAGES: "cleanup_orphan_images",
     CLEANUP_TOKENS: "cleanup_tokens",
     CLEANUP_USERS: "cleanup_users",
+    SIMULATE_SHIPPING: "simulate_shipping",
   },
 } as const;

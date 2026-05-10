@@ -51,6 +51,10 @@ export interface OrderCancelledPayload {
   name: string;
 }
 
+export interface OrderExpirePayload {
+  orderId: string;
+}
+
 export interface PaymentCompletedPayload {
   paymentId: string;
   orderId: string;
@@ -62,18 +66,10 @@ export interface PaymentCompletedPayload {
   invoiceUrl?: string;
 }
 
-export interface ProductImageAddedPayload {
-  productId: string;
-  imagePath: string;
-  folder: string;
-}
-
 export interface ProductImageRemovedPayload {
-  productId: string;
   publicId: string;
 }
 
 export interface ProductDeletedPayload {
-  productId: string;
   publicIds: string[];
 }

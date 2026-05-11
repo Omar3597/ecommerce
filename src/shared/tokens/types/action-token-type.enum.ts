@@ -1,0 +1,4 @@
+export enum ActionTokenType {
+  VERIFICATION = 'VERIFICATION',
+  PASSWORD_RESET = 'PASSWORD_RESET',
+}

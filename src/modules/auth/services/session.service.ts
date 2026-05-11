@@ -50,6 +50,7 @@ export class SessionService {
         userId: user.id,
         email: user.email,
         name: user.name,
+        expiresInMinutes: 10,
       });
 
       throw new AppError(
@@ -88,7 +89,8 @@ export class SessionService {
   async rotateRefreshToken(refreshToken: string) {
     const hashedOldToken = this.hashRefreshToken(refreshToken);
 
-    const storedToken = await this.authRepo.findValidRefreshToken(hashedOldToken);
+    const storedToken =
+      await this.authRepo.findValidRefreshToken(hashedOldToken);
 
     if (!storedToken) {
       throw new AppError(401, "Invalid refresh token");
@@ -140,7 +142,10 @@ export class SessionService {
   }
 
   private hashRefreshToken(refreshToken: string) {
-    return this.securityUtils.hashTokenHMAC(refreshToken, config.REFRESH_TOKEN_SECRET);
+    return this.securityUtils.hashTokenHMAC(
+      refreshToken,
+      config.REFRESH_TOKEN_SECRET,
+    );
   }
 
   private getRefreshTokenExpiryDate(days = 5) {

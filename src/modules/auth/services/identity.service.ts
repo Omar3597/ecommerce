@@ -41,6 +41,7 @@ export class IdentityService {
       userId: newUser.id,
       email: newUser.email,
       name: newUser.name,
+      expiresInMinutes: 10,
     });
 
     this.logger.info(
@@ -56,7 +57,8 @@ export class IdentityService {
 
   async verifyEmail(token: string) {
     const hashedToken = this.securityUtils.hashTokenSHA256(token);
-    const storedToken = await this.authRepo.findValidVerificationToken(hashedToken);
+    const storedToken =
+      await this.authRepo.findValidVerificationToken(hashedToken);
 
     if (!storedToken) {
       throw new AppError(400, "Verification token is invalid or has expired");

@@ -30,6 +30,7 @@ export class PasswordService {
       userId: user.id,
       email: user.email,
       name: user.name,
+      expiresInMinutes: 10,
     });
   }
 
@@ -65,6 +66,7 @@ export class PasswordService {
     EventBus.getInstance().emit(EVENT_NAMES.USER.PASSWORD_CHANGED, {
       userId: storedToken.userId,
       email: storedToken.user.email,
+      expiresInMinutes: 10,
     });
     return result;
   }

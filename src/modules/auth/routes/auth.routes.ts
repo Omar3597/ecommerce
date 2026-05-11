@@ -1,17 +1,18 @@
 import { Router } from "express";
 import { AuthController } from "../controllers/auth.controller";
-import { AuthService } from "../services/auth.service";
+import { IdentityService } from "../services/identity.service";
+import { SessionService } from "../services/session.service";
+import { PasswordService } from "../services/password.service";
 import { protect } from "../../../middlewares/protect";
 import { AuthRepo } from "../repositories/auth.repo";
-import { AuthEmailTokenService } from "../../../shared/services/emailToken.service";
-import { prisma } from "../../../lib/prisma";
 
 const authRouter = Router();
 
 const authRepo = new AuthRepo();
-const authEmailTokenService = new AuthEmailTokenService(prisma);
-const authService = new AuthService(authRepo, authEmailTokenService);
-const authController = new AuthController(authService);
+const identityService = new IdentityService(authRepo);
+const sessionService = new SessionService(authRepo);
+const passwordService = new PasswordService(authRepo);
+const authController = new AuthController(identityService, sessionService, passwordService);
 
 authRouter.post("/register", authController.createUser);
 authRouter.post("/login", authController.login);

@@ -2,12 +2,29 @@ import { Job } from "bullmq";
 import { IEmailStrategy } from "../email.strategy.interface";
 import { EmailService } from "../../../shared/services/email/email.service";
 import { UserRequestVerifyPayload } from "../../../events/event.types";
+import {
+  TokenService,
+  TokenRepo,
+  ActionTokenType,
+} from "../../../shared/tokens";
 
 export class VerifyEmailStrategy implements IEmailStrategy {
+  private tokenService = new TokenService(new TokenRepo());
+
   constructor(private emailService: EmailService) {}
 
   async execute(job: Job<UserRequestVerifyPayload>): Promise<void> {
     console.log("Executing VerifyEmailStrategy ...");
-    await this.emailService.sendVerification(job.data);
+    const { userId, email, name, expiresInMinutes } = job.data;
+    const verifyUrl = await this.tokenService.createActionLink(
+      userId,
+      ActionTokenType.VERIFICATION,
+    );
+    await this.emailService.sendVerification({
+      name,
+      email,
+      verifyUrl,
+      expiresInMinutes,
+    });
   }
 }

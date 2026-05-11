@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
-import { AuthService } from "../services/auth.service";
+import { IdentityService } from "../services/identity.service";
+import { SessionService } from "../services/session.service";
+import { PasswordService } from "../services/password.service";
 import { catchAsync } from "../../../middlewares/catchAsync";
 import {
   signupSchema,
@@ -13,7 +15,11 @@ import { toPublicUser } from "../dtos/auth.dto";
 import { AuthRequest } from "../../../shared/types/auth.types";
 
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly identityService: IdentityService,
+    private readonly sessionService: SessionService,
+    private readonly passwordService: PasswordService,
+  ) {}
 
   private sendRefreshTokenCookie(res: Response, token: string) {
     const cookieOptions = {
@@ -36,7 +42,7 @@ export class AuthController {
   public createUser = catchAsync(async (req: Request, res: Response) => {
     const validatedData = signupSchema.parse(req);
 
-    const user = await this.authService.registerUser(validatedData.body);
+    const user = await this.identityService.registerUser(validatedData.body);
 
     res.status(201).json({
       status: "success",
@@ -48,7 +54,7 @@ export class AuthController {
     const validatedData = loginSchema.parse(req);
 
     const { user, accessToken, refreshToken } =
-      await this.authService.loginWithEmailAndPassword(validatedData.body);
+      await this.sessionService.loginWithEmailAndPassword(validatedData.body);
 
     this.sendRefreshTokenCookie(res, refreshToken);
 
@@ -66,7 +72,7 @@ export class AuthController {
 
     const { refreshToken } = validatedData.cookies;
 
-    const result = await this.authService.rotateRefreshToken(refreshToken);
+    const result = await this.sessionService.rotateRefreshToken(refreshToken);
 
     this.sendRefreshTokenCookie(res, result.refreshToken);
 
@@ -82,7 +88,7 @@ export class AuthController {
   public forgotPassword = catchAsync(async (req: Request, res: Response) => {
     const validatedData = forgotPasswordSchema.parse(req);
 
-    await this.authService.forgotPassword(validatedData.body);
+    await this.passwordService.forgotPassword(validatedData.body);
 
     res.status(200).json({
       status: "success",
@@ -97,7 +103,7 @@ export class AuthController {
     const { password } = validatedData.body;
     const { token } = validatedData.params;
 
-    await this.authService.resetPassword(token, password);
+    await this.passwordService.resetPassword(token, password);
 
     res.status(200).json({
       status: "success",
@@ -111,7 +117,7 @@ export class AuthController {
 
     const { token } = validatedData.params;
 
-    await this.authService.verifyEmail(token);
+    await this.identityService.verifyEmail(token);
 
     res.status(200).json({
       status: "success",
@@ -125,7 +131,7 @@ export class AuthController {
 
     const { refreshToken } = validatedData.cookies;
 
-    await this.authService.logout(refreshToken);
+    await this.sessionService.logout(refreshToken);
     this.clearRefreshTokenCookie(res);
 
     res.status(204).send();
@@ -133,7 +139,7 @@ export class AuthController {
 
   public logoutFromAllDevices = catchAsync(
     async (req: AuthRequest, res: Response) => {
-      await this.authService.logoutFromAllDevices(req.user.id);
+      await this.sessionService.logoutFromAllDevices(req.user.id);
       this.clearRefreshTokenCookie(res);
 
       res.status(204).send();

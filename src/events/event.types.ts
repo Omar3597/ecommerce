@@ -2,7 +2,6 @@ export interface UserSignupPayload {
   userId: string;
   email: string;
   name: string;
-  verifyUrl: string;
   expiresInMinutes: number;
 }
 
@@ -10,7 +9,6 @@ export interface UserRequestVerifyPayload {
   userId: string;
   email: string;
   name: string;
-  verifyUrl: string;
   expiresInMinutes: number;
 }
 
@@ -18,7 +16,6 @@ export interface UserForgotPasswordPayload {
   userId: string;
   email: string;
   name: string;
-  resetUrl: string;
   expiresInMinutes: number;
 }
 

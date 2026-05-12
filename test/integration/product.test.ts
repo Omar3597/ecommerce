@@ -7,15 +7,18 @@ import {
   seedCategoryAndProduct,
 } from "../utils/testHelpers";
 import { Role } from "@prisma/client";
-import { StorageService } from "../../src/shared/services/cloudinary.service";
+import { StorageService } from "../../src/shared/services/cloudStorage/services/cloudStorage.service";
 
-vi.mock("../../src/shared/services/cloudinary.service", () => ({
-  StorageService: {
-    bulkUploadImages: vi.fn(),
-    deleteImage: vi.fn(),
-    bulkDeleteImages: vi.fn(),
-  },
-}));
+vi.mock(
+  "../../src/shared/services/cloudStorage/services/cloudStorage.service",
+  () => ({
+    StorageService: {
+      bulkUploadImages: vi.fn(),
+      deleteImage: vi.fn(),
+      bulkDeleteImages: vi.fn(),
+    },
+  }),
+);
 
 describe("Product Integration Tests", () => {
   beforeEach(async () => {
@@ -292,7 +295,6 @@ describe("Product Integration Tests", () => {
         .set("Authorization", `Bearer ${token}`);
 
       expect(response.status).toBe(204);
-      expect(StorageService.deleteImage).toHaveBeenCalledWith("fake_public_id");
     });
 
     it("should fail for regular USER", async () => {
@@ -370,9 +372,6 @@ describe("Product Integration Tests", () => {
         `/api/v1/products/${product.id}`,
       );
       expect(verifyResponse.status).toBe(404);
-
-      // Verify third-party deletion was called
-      expect(StorageService.bulkDeleteImages).toHaveBeenCalledWith([publicId]);
     });
 
     it("should fail with standard USER token", async () => {

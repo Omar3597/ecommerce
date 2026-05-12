@@ -1,15 +1,18 @@
+import { Queue } from "bullmq";
 import { OrderRepo } from "../repositories/order.repo";
 import baseLogger from "../../../config/logger";
-import { EventBus } from "../../../infra/event-bus";
-import { EVENT_NAMES } from "../../../events";
+import { JOB_NAMES } from "../../../infra/queue";
 import { ProductService } from "../../product";
 
 export class OrderExpirationService {
   private logger = baseLogger.child({ module: "order" });
 
-  constructor(private readonly orderRepo: OrderRepo = new OrderRepo()) {}
+  constructor(
+    private readonly emailQueue: Queue,
+    private readonly orderRepo: OrderRepo = new OrderRepo(),
+  ) {}
 
-  async handleExpiredOrder(orderId: string) {
+  async handleExpiredOrder({ orderId }: { orderId: string }) {
     return this.orderRepo.runInTransaction(async (tx) => {
       const order = await tx.order.findUnique({
         where: { id: orderId },
@@ -39,7 +42,7 @@ export class OrderExpirationService {
           "Order expired and stock restored",
         );
 
-        EventBus.getInstance().emit(EVENT_NAMES.ORDER.CANCELLED, {
+        await this.emailQueue.add(JOB_NAMES.EMAIL.ORDER_CANCELLED, {
           orderId: order.id,
           userId: order.userId,
           email: order.user.email,

@@ -3,6 +3,7 @@ import {
   QueueFactory,
   QueueRegistry,
   WorkerFactory,
+  QUEUE_NAMES,
 } from "../infra/queue";
 import { EmailProviderFactory } from "../infra/email/email.factory";
 import { EmailService } from "../shared/services/email/email.service";
@@ -32,10 +33,11 @@ async function main() {
   const emailProvider = EmailProviderFactory.create();
   const emailService = new EmailService(emailProvider);
 
-  const cloudProvider = CloudStorageProviderFactory.create(); // Assuming you have a factory or direct instance
+  const cloudProvider = CloudStorageProviderFactory.create();
   const cloudStorageService = new CloudStorageService(cloudProvider);
 
-  const expirationService = new OrderExpirationService();
+  const emailQueue = queueFactory.getOrCreate(QUEUE_NAMES.EMAIL);
+  const expirationService = new OrderExpirationService(emailQueue);
   const cartCleanupService = new CartCleanupService();
   const shippingSimulatorService = new ShippingSimulatorService();
   const orphanImagesCleanupService = new OrphanImagesCleanupService();

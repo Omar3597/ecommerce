@@ -35,11 +35,6 @@ export interface UserChangeEmailPayload {
 
 export interface OrderCreatedPayload {
   orderId: string;
-  userId: string;
-  email: string;
-  name: string;
-  totalAmount: number;
-  items: any[];
 }
 
 export interface OrderConfirmedPayload {

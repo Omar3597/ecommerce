@@ -4,9 +4,11 @@ import {
   UpdateProductInput,
 } from "../validators/product.validator";
 import { ProductRepo } from "../repositories/product.repo";
-import { StorageService } from "../../../shared/services/cloudinary.service";
+import { StorageService } from "../../../shared/services/cloudStorage/services/cloudStorage.service";
 import baseLogger from "../../../config/logger";
 import type { ICacheService } from "../../../infra/cache";
+import { EventBus } from "../../../infra/event-bus";
+import { EVENT_NAMES } from "../../../events";
 
 export class ProductService {
   private logger = baseLogger.child({ module: "product" });
@@ -14,6 +16,21 @@ export class ProductService {
     private readonly productRepo: ProductRepo,
     private readonly cache: ICacheService,
   ) {}
+
+  static async restoreStock(
+    items: { productId: string; quantity: number }[],
+    tx: any,
+  ) {
+    for (const item of items) {
+      await tx.product.updateMany({
+        where: { id: item.productId },
+        data: {
+          stock: { increment: item.quantity },
+          soldQuantity: { decrement: item.quantity },
+        },
+      });
+    }
+  }
 
   async getPublicProducts(reqQuery: Record<string, any>) {
     const { page = 1, limit = 20, sort, filter } = reqQuery;
@@ -98,7 +115,6 @@ export class ProductService {
     productId: string,
     context: { userId?: string; role?: string; requestId?: string } = {},
   ) {
-    // Fetch image records before the product row is deleted
     const images =
       await this.productRepo.findProductImagesByProductId(productId);
 
@@ -118,12 +134,11 @@ export class ProductService {
       "Product deleted",
     );
 
-    // Clean up Cloudinary assets (fire-and-forget; DB row is already gone)
     if (images.length > 0) {
       const publicIds = images.map((img) => img.publicId);
-      StorageService.bulkDeleteImages(publicIds).catch((err) =>
-        console.error("Failed to delete product images from Cloudinary", err),
-      );
+      EventBus.getInstance().emit(EVENT_NAMES.PRODUCT.DELETED, {
+        publicIds,
+      });
     }
   }
 
@@ -158,7 +173,16 @@ export class ProductService {
     context: { userId: string; role: string },
   ) {
     const start = performance.now();
-    const results = await StorageService.bulkUploadImages(buffers, "products");
+    const results = await StorageService.bulkUploadImages({
+      fileBuffers: buffers,
+      folderPath: "products",
+      format: "webp",
+      transformations: [
+        { width: 800, height: 800, crop: "limit" },
+        { width: 400, height: 400, crop: "limit", suffix: "_thumb" },
+      ],
+    });
+
     const duration = Math.round(performance.now() - start);
 
     this.logger.info(
@@ -180,19 +204,18 @@ export class ProductService {
     publicId: string,
     context: { userId: string; role: string },
   ) {
-    const start = performance.now();
-    await StorageService.deleteImage(publicId);
-    const duration = Math.round(performance.now() - start);
-
     this.logger.info(
       {
         action: "DELETE_PRODUCT_IMAGE",
         userId: context.userId,
         role: context.role,
         publicId,
-        duration,
       },
       "Deleted product image",
     );
+
+    EventBus.getInstance().emit(EVENT_NAMES.PRODUCT.IMAGE_REMOVED, {
+      publicId,
+    });
   }
 }

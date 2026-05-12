@@ -1,9 +1,16 @@
 import { getConfig } from "./config/env";
 import app from "./app";
-import { initCronJobs } from "./shared/jobs/cron";
 import logger from "./config/logger";
+import { EventBus } from "./infra/event-bus";
+import { QueueClient, QueueRegistry, QueueFactory } from "./infra/queue";
+import { bootstrapSubscribers } from "./events";
 
-initCronJobs();
+const queueClient = QueueClient.getInstance();
+const queueRegistry = QueueRegistry.getInstance();
+const queueFactory = new QueueFactory(queueClient, queueRegistry);
+const eventBus = EventBus.getInstance();
+
+bootstrapSubscribers(eventBus, queueFactory);
 
 process.on("uncaughtException", (err: Error) => {
   logger.error({ error: err }, "UNCAUGHT EXCEPTION! Shutting down...");

@@ -8,6 +8,6 @@ export class ExpireOrderStrategy implements IOrderStrategy {
 
   async execute(job: Job<OrderExpirePayload>): Promise<void> {
     console.log("Executing ExpireOrderStrategy ...");
-    await this.orderExpirationService.handleExpiredOrder(job.data.orderId);
+    await this.orderExpirationService.handleExpiredOrder(job.data);
   }
 }

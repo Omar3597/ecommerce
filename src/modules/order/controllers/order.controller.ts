@@ -38,7 +38,7 @@ export class OrderController {
       const { addressId } = validatedData.body;
 
       const order = await this.orderService.createOrderFromCart(
-        req.user.id,
+        { id: req.user.id, email: req.user.email },
         addressId,
       );
 

@@ -4,6 +4,7 @@ export const EVENT_NAMES = {
     REQUEST_VERIFY: "user.request_verify",
     FORGOT_PASSWORD: "user.forgot_password",
     PASSWORD_CHANGED: "user.password_changed",
+    CHANGE_EMAIL_REQUEST: "user.change_email_request",
   },
   PAYMENT: {
     COMPLETED: "payment.completed",

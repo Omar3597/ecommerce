@@ -27,13 +27,14 @@ export interface UserPasswordChangedPayload {
   supportUrl: string;
 }
 
-export interface OrderCreatedPayload {
-  orderId: string;
+export interface UserChangeEmailPayload {
   userId: string;
   email: string;
   name: string;
-  totalAmount: number;
-  items: any[];
+}
+
+export interface OrderCreatedPayload {
+  orderId: string;
 }
 
 export interface OrderConfirmedPayload {

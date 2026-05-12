@@ -1,6 +1,8 @@
 import AppError from "../../../shared/errors/appError";
 import { OrderRepo } from "../repositories/order.repo";
 import baseLogger from "../../../config/logger";
+import { EventBus } from "../../../infra/event-bus";
+import { EVENT_NAMES } from "../../../events";
 
 type ProductForOrder = {
   id: string;
@@ -53,17 +55,20 @@ export class OrderService {
     return order;
   }
 
-  async createOrderFromCart(userId: string, addressId: string) {
+  async createOrderFromCart(
+    user: { id: string; email: string },
+    addressId: string,
+  ) {
     return this.orderRepo.runInTransaction(async (tx) => {
-      const cart = await this.loadCart(tx, userId);
-      const address = await this.loadAddress(tx, addressId, userId);
+      const cart = await this.loadCart(tx, user.id);
+      const address = await this.loadAddress(tx, addressId, user.id);
 
       const validItems = this.validateCartItems(cart.items);
       const totals = this.calculateTotals(validItems);
       const orderExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
       const order = await this.orderRepo.createOrderWithAddressSnapshot(tx, {
-        userId,
+        userId: user.id,
         address,
         totals,
         orderExpiresAt,
@@ -80,12 +85,16 @@ export class OrderService {
       this.logger.info(
         {
           action: "CREATE_ORDER",
-          userId,
+          userId: user.id,
           addressId,
           entityId: order.id,
         },
         "Order created",
       );
+
+      EventBus.getInstance().emit(EVENT_NAMES.ORDER.CREATED, {
+        orderId: order.id,
+      });
 
       return order;
     });

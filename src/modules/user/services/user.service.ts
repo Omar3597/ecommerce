@@ -8,19 +8,14 @@ import {
 } from "../validators/user.validator";
 import { User } from "@prisma/client";
 import crypto from "crypto";
-import {
-  AuthEmailTokenService,
-  EmailTokenType,
-} from "../../../shared/services/emailToken.service";
 import { UserRepo } from "../repositories/user.repo";
 import baseLogger from "../../../config/logger";
+import { EventBus } from "../../../infra/event-bus";
+import { EVENT_NAMES } from "../../../events";
 
 export class UserService {
   private logger = baseLogger.child({ module: "user" });
-  constructor(
-    private readonly userRepo: UserRepo,
-    private readonly authEmailTokenService: AuthEmailTokenService,
-  ) {}
+  constructor(private readonly userRepo: UserRepo) {}
 
   async updateProfile(user: User, data: updateProfileInput) {
     if (data.name === user.name) {
@@ -73,18 +68,11 @@ export class UserService {
       data.email,
     );
 
-    void this.authEmailTokenService
-      .send(
-        {
-          id: updatedUser.id,
-          email: data.email,
-          firstName: updatedUser.name.split(" ")[0] ?? updatedUser.name,
-        },
-        EmailTokenType.EMAIL_CHANGE,
-      )
-      .catch((err) =>
-        console.error("Failed to create email change token: ", err),
-      );
+    EventBus.getInstance().emit(EVENT_NAMES.USER.CHANGE_EMAIL_REQUEST, {
+      userId: updatedUser.id,
+      email: data.email,
+      name: updatedUser.name,
+    });
 
     this.logger.info({
       userId: user.id,

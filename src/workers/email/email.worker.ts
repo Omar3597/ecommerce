@@ -8,9 +8,9 @@ import {
   WelcomeVerifyEmailStrategy,
   VerifyEmailStrategy,
   ForgotPasswordEmailStrategy,
-  InvoiceEmailStrategy,
   OrderCancelledEmailStrategy,
   PasswordChangedEmailStrategy,
+  ChangeEmailStrategy,
 } from "./strategies";
 
 export class EmailWorker implements IWorker {
@@ -34,16 +34,16 @@ export class EmailWorker implements IWorker {
       new ForgotPasswordEmailStrategy(this.emailService),
     );
     this.strategies.set(
-      JOB_NAMES.EMAIL.INVOICE,
-      new InvoiceEmailStrategy(this.emailService),
-    );
-    this.strategies.set(
       JOB_NAMES.EMAIL.ORDER_CANCELLED,
       new OrderCancelledEmailStrategy(this.emailService),
     );
     this.strategies.set(
       JOB_NAMES.EMAIL.PASSWORD_CHANGED,
       new PasswordChangedEmailStrategy(this.emailService),
+    );
+    this.strategies.set(
+      JOB_NAMES.EMAIL.CHANGE_EMAIL,
+      new ChangeEmailStrategy(this.emailService),
     );
   }
 

@@ -7,6 +7,7 @@ import {
   UserRequestVerifyPayload,
   UserForgotPasswordPayload,
   UserPasswordChangedPayload,
+  UserChangeEmailPayload,
 } from "../event.types";
 
 export class UserSubscriber {
@@ -41,6 +42,13 @@ export class UserSubscriber {
       EVENT_NAMES.USER.PASSWORD_CHANGED,
       async (payload: UserPasswordChangedPayload) => {
         await this.emailQueue.add(JOB_NAMES.EMAIL.PASSWORD_CHANGED, payload);
+      },
+    );
+
+    this.eventBus.on(
+      EVENT_NAMES.USER.CHANGE_EMAIL_REQUEST,
+      async (payload: UserChangeEmailPayload) => {
+        await this.emailQueue.add(JOB_NAMES.EMAIL.CHANGE_EMAIL, payload);
       },
     );
   }

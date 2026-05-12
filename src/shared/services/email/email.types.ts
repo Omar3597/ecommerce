@@ -12,6 +12,13 @@ export interface VerifyEmailData {
   expiresInMinutes: number;
 }
 
+export interface ChangeEmailData {
+  name: string;
+  email: string;
+  verifyUrl: string;
+  expiresInMinutes: number;
+}
+
 export interface ForgotPasswordEmailData {
   name: string;
   email: string;

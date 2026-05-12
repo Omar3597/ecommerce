@@ -27,6 +27,12 @@ export interface UserPasswordChangedPayload {
   supportUrl: string;
 }
 
+export interface UserChangeEmailPayload {
+  userId: string;
+  email: string;
+  name: string;
+}
+
 export interface OrderCreatedPayload {
   orderId: string;
   userId: string;

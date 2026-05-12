@@ -11,6 +11,7 @@ import {
   InvoiceEmailStrategy,
   OrderCancelledEmailStrategy,
   PasswordChangedEmailStrategy,
+  ChangeEmailStrategy,
 } from "./strategies";
 
 export class EmailWorker implements IWorker {
@@ -44,6 +45,10 @@ export class EmailWorker implements IWorker {
     this.strategies.set(
       JOB_NAMES.EMAIL.PASSWORD_CHANGED,
       new PasswordChangedEmailStrategy(this.emailService),
+    );
+    this.strategies.set(
+      JOB_NAMES.EMAIL.CHANGE_EMAIL,
+      new ChangeEmailStrategy(this.emailService),
     );
   }
 

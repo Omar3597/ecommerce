@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .btn { display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Hello <%= name %>,</h2>
+        <p>You recently requested to change the email address associated with your account. Please confirm this change by clicking the link below:</p>
+        <p>
+            <a href="<%= verifyUrl %>" class="btn">Confirm Email Change</a>
+        </p>
+        <p>This link will expire in <%= expiresInMinutes %> minutes.</p>
+        <p>If you didn't request this change, you can safely ignore this email and your email address will remain the same.</p>
+    </div>
+</body>
+</html>

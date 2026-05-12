@@ -14,6 +14,7 @@ export const JOB_NAMES = {
     INVOICE: "invoice",
     ORDER_CANCELLED: "order_cancelled",
     PASSWORD_CHANGED: "password_changed",
+    CHANGE_EMAIL: "change_email",
   },
   IMAGE: {
     DELETE: "delete",

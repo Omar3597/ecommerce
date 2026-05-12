@@ -8,6 +8,7 @@ import {
   InvoiceEmailData,
   OrderCancelledEmailData,
   PasswordChangedEmailData,
+  ChangeEmailData,
 } from "./email.types";
 
 export class EmailService {
@@ -36,6 +37,15 @@ export class EmailService {
     await this.provider.send({
       to: data.email,
       subject: "Verify your email address",
+      html,
+    });
+  }
+
+  async sendEmailChange(data: ChangeEmailData): Promise<void> {
+    const html = await this.compile("change-email.ejs", data);
+    await this.provider.send({
+      to: data.email,
+      subject: "Verify your new email address",
       html,
     });
   }

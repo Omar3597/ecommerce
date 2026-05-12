@@ -1,5 +1,5 @@
 export * from "./forgot-password.strategy";
-export * from "./invoice.strategy";
+// export * from "./invoice.strategy";
 export * from "./order-cancelled.strategy";
 export * from "./password-changed.strategy";
 export * from "./change-email.strategy";

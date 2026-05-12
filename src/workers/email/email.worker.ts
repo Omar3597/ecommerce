@@ -8,7 +8,6 @@ import {
   WelcomeVerifyEmailStrategy,
   VerifyEmailStrategy,
   ForgotPasswordEmailStrategy,
-  InvoiceEmailStrategy,
   OrderCancelledEmailStrategy,
   PasswordChangedEmailStrategy,
   ChangeEmailStrategy,
@@ -33,10 +32,6 @@ export class EmailWorker implements IWorker {
     this.strategies.set(
       JOB_NAMES.EMAIL.FORGOT_PASSWORD,
       new ForgotPasswordEmailStrategy(this.emailService),
-    );
-    this.strategies.set(
-      JOB_NAMES.EMAIL.INVOICE,
-      new InvoiceEmailStrategy(this.emailService),
     );
     this.strategies.set(
       JOB_NAMES.EMAIL.ORDER_CANCELLED,

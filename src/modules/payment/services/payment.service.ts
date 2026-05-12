@@ -3,6 +3,8 @@ import AppError from "../../../shared/errors/appError";
 import { getConfig } from "../../../config/env";
 import { PaymentRepo } from "../repositories/payment.repo";
 import baseLogger from "../../../config/logger";
+// import { EventBus } from "../../../infra/event-bus";
+// import { EVENT_NAMES } from "../../../events";
 
 const config = getConfig();
 const stripe = new Stripe(config.STRIPE_SECRET_KEY);
@@ -77,6 +79,14 @@ export class PaymentService {
           },
           "Payment successful",
         );
+
+        // EventBus.getInstance().emit(EVENT_NAMES.PAYMENT.COMPLETED, {
+        //   paymentId: session.id,
+        //   orderId: session.metadata?.orderId ?? "",
+        //   userId: session.metadata?.userId ?? "",
+        //   email: session.customer_details?.email ?? "placeholder@email.com",
+        //   amount: session.amount_total ?? 0,
+        // });
         break;
       }
       default:

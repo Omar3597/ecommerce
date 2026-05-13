@@ -34,20 +34,25 @@ This project implements the core concerns of a real e-commerce backend system: s
 - **Refresh token rotation** — each token can only be used once; replay a consumed token and the request is rejected
 - **Session limiting** — configurable max concurrent sessions per user; oldest session is evicted on overflow
 - **Role-based access control (RBAC)** — three roles (`USER`, `MANAGER`, `ADMIN`) with a centralized permission map
-- **Email flows** — account verification, password reset, and email-change confirmation via Nodemailer + MJML templates
+- **Modular Auth services** — `AuthService` decomposed into three focused services (`IdentityService`, `SessionService`, `PasswordService`) with a shared `TokenService` for cryptographic action-link generation; `SecurityUtils` centralises all SHA-256 / HMAC-SHA256 primitives
+- **Email flows** — six transactional emails (welcome+verify, re-send verification, forgot password, invoice, order cancelled, password changed) delivered via a pluggable provider layer (Brevo / Mailtrap) with typed EJS templates; rendered and dispatched asynchronously by a dedicated **Email Worker** process
+- **Event-driven architecture (EDA)** — domain services emit typed events via an in-process `EventBus` (Node.js `EventEmitter` singleton); four subscriber classes (`UserSubscriber`, `OrderSubscriber`, `PaymentSubscriber`, `ProductSubscriber`) translate events into BullMQ jobs, fully decoupling producers from consumers
+- **BullMQ job queues** — five named queues (`EMAIL`, `IMAGE`, `ORDER`, `SCHEDULER`, `NOTIFICATION`) backed by Redis; a `QueueFactory` / `QueueRegistry` pair manages queue lifecycle; a `WorkerFactory` spawns BullMQ workers with configurable concurrency
+- **Separate worker process** — `worker.server.ts` boots independently of the API; houses `EmailWorker`, `ImageWorker`, `OrderWorker`, and `SchedulerWorker`, each dispatching jobs via a strategy map (`IJobStrategy`)
+- **Reliable background scheduler** — legacy `node-cron` jobs replaced by BullMQ repeatable jobs (`Queue.upsertJobScheduler`); five cleanup strategies (`carts`, `orders`, `orphan images`, `tokens`, `users`) run on cron schedules with automatic retry and observability
+- **Bull Board UI** — queue dashboard mounted at `/admin/queues` (auth-protected); provides real-time visibility into job counts, retries, and failures across all queues
 - **Product catalog** — filterable, sortable, paginated product listing; category hierarchy support; hidden product/category logic
-- **Cloudinary image management** — multi-image upload per product (up to 3), ordered display, admin-only `publicId` exposure, fire-and-forget bulk delete on product removal
+- **Cloudinary image management** — multi-image upload per product (up to 3), ordered display, admin-only `publicId` exposure; image operations (upload, delete, bulk delete) offloaded to the `ImageWorker` via `ProductSubscriber`
 - **Cart management** — per-user cart with quantity control and configurable item cap
 - **Checkout (transactional)** — stock decrement, price/name snapshots, and cart clear run inside a single Prisma interactive transaction; rolls back atomically on any failure
-- **Stripe Checkout** — Stripe Checkout Session creation for PENDING orders; webhook handler for `checkout.session.completed` marks orders as `PAID`
-- **Order lifecycle** — status transitions (`PENDING → PAID → SHIPPED → DELIVERED`); automatically updated with shipping simulator cron
+- **Stripe Checkout** — Stripe Checkout Session creation for PENDING orders; webhook handler for `checkout.session.completed` marks orders as `PAID` and emits `PAYMENT_COMPLETED` (triggers invoice email via queue)
+- **Order lifecycle** — status transitions (`PENDING → PAID → SHIPPED → DELIVERED`); expiration enforced by a delayed BullMQ job (10 min); shipping simulation runs as a scheduled worker strategy
 - **Address snapshots** — shipping address captured at checkout time; historical accuracy preserved even if the user updates their address later
 - **Purchase-verified reviews** — users can only review products from delivered orders; one review per user per product
-- **Structured logging (Pino)** — JSON logs in production, pretty-printed in development; automatic `requestId` injection via `AsyncLocalStorage`; sensitive fields (cookies, tokens, passwords, emails) redacted at the logger level
-- **Background jobs (node-cron)** — scheduled cleanup for expired tokens, stale carts, soft-deleted users, abandoned orders, and orphaned Cloudinary images; a shipping simulator for demo purposes
-- **Integration test suite** — Vitest-based integration tests covering all 10 modules, run against a dedicated Docker PostgreSQL instance
-- **Dockerized** — separate `docker-compose` files for development, production, and testing environments
-- **Analytics dashboard** — single `GET /stats` endpoint that returns a complete application snapshot; all heavy aggregations run in parallel via `Promise.all`
+- **Structured logging (Pino)** — JSON logs in production, pretty-printed in development; automatic `requestId` injection via `AsyncLocalStorage`; sensitive fields redacted at the logger configuration level
+- **Integration test suite** — Vitest-based integration tests covering all modules, run against a dedicated Docker PostgreSQL instance
+- **Dockerized** — separate `docker-compose` files for development, production, and testing; worker service defined in each compose file sharing the same Redis and PostgreSQL network
+- **Analytics dashboard** — single `GET /stats` endpoint returning a complete application snapshot; all heavy aggregations run in parallel via `Promise.all`
   - **Financial metrics** — current/previous period revenue, order counts, period-over-period growth %, and average order value
   - **Product & inventory health** — best-selling products (by units sold), category revenue distribution, low-stock alerts (≤ 10 units), and dead-stock detection (products with no sales in 30+ days)
   - **Customer behavior** — new user count, repeat-customer rate, and period-over-period repeat-customer growth to distinguish loyal buyers from one-time purchasers
@@ -57,7 +62,7 @@ This project implements the core concerns of a real e-commerce backend system: s
 
 ## 3. Architecture Overview
 
-The application uses a **feature-based (modular) architecture**. Each feature domain is self-contained under `src/modules/`. There are no global `controllers/`, `services/`, or `repositories/` folders.
+The application uses a **feature-based (modular) architecture**. Each feature domain is self-contained under `src/modules/`. There are no global `controllers/`, `services/`, or `repositories/` folders. A separate **worker process** (`worker.server.ts`) runs alongside the API, consuming BullMQ jobs from Redis-backed queues.
 
 **Within each module:**
 
@@ -71,23 +76,42 @@ The application uses a **feature-based (modular) architecture**. Each feature do
 | `*.dto.ts`        | Response shape transformations (e.g., public view vs. admin view)             |
 | `*.query.ts`      | Query engine config: allowed filters, sort fields, selectable fields          |
 
-**Shared infrastructure** lives in `src/common/` (error classes, middleware, cron job handlers, email service) and `src/config/` (validated env config, database singleton, logger).
+**Shared infrastructure** lives in `src/shared/` (email service, token service, security utils) and `src/infra/` (queue client, event bus, Cloudinary, email transport providers). `src/config/` holds validated env config, the database singleton, and the Pino logger.
 
 ```
 src/
 ├── app.ts                      # Express app: middleware, route mounting, error handler
-├── server.ts                   # HTTP server entry point; registers cron jobs at startup
+├── server.ts                   # API process entry: boots EventBus, queues, subscribers, Bull Board
 ├── config/
 │   ├── env.ts                  # Env validation via Zod-style type guards (getConfig())
 │   ├── database.ts             # PrismaClient singleton
 │   └── logger.ts               # Pino base logger with redaction and AsyncLocalStorage mixin
-├── common/
-│   ├── errors/                 # Global error handler (env-aware: dev vs. prod responses)
-│   ├── middlewares/            # protect (JWT), authorize (RBAC), catchAsync, multer upload
-│   ├── services/               # Email dispatch (Nodemailer + MJML)
-│   └── jobs/                   # node-cron scheduler and job handlers
+├── infra/
+│   ├── queue/                  # QueueClient (IORedis), QueueFactory, QueueRegistry, WorkerFactory
+│   ├── event-bus/              # EventBus singleton (typed Node.js EventEmitter)
+│   ├── email/                  # IEmailProvider, MailtrapProvider, BrevoProvider, EmailProviderFactory
+│   └── cloudStorage/           # Cloudinary connection and upload helpers
+├── shared/
+│   ├── tokens/                 # TokenService, TokenRepo, ActionTokenType enum
+│   ├── utils/                  # SecurityUtils (SHA-256, HMAC-SHA256, random token generation)
+│   └── services/
+│       └── email/              # EmailService + typed EJS templates (6 email types)
+├── events/
+│   ├── event.constants.ts      # EVENT_NAMES grouped by domain
+│   ├── event.types.ts          # Typed payload interfaces per event
+│   └── subscribers/            # UserSubscriber, OrderSubscriber, PaymentSubscriber, ProductSubscriber
+├── workers/
+│   ├── worker.server.ts        # Worker process entry point (separate from API)
+│   ├── email/                  # EmailWorker + 6 strategy classes
+│   ├── image/                  # ImageWorker + Upload/Delete/BulkDelete strategies
+│   ├── order/                  # OrderWorker + ExpireOrder/SimulateShipping strategies
+│   └── scheduler/              # SchedulerWorker + 5 cleanup strategies; Scheduler (repeatable jobs)
 └── modules/
     ├── auth/
+    │   └── services/
+    │       ├── identity.service.ts   # Registration, email verification
+    │       ├── session.service.ts    # Login, JWT, refresh rotation, logout
+    │       └── password.service.ts   # Forgot/reset password, bcrypt
     ├── user/
     ├── product/
     ├── category/
@@ -499,6 +523,26 @@ See `.env.example` for the full reference.
 
 Short-lived JWTs (15 minutes) minimize damage from token leakage — no database lookup is required to verify them. Refresh tokens are long-lived but stored only as HMAC-SHA256 hashes in the database; the raw token is never persisted. If the database is compromised, the attacker cannot use the stored values to authenticate. Rotation ensures each token is single-use, which eliminates replay attacks on previously rotated tokens.
 
+**Auth module decomposition — three focused services + shared `TokenService`**
+
+The original monolithic `AuthService` was split into `IdentityService` (registration, verification), `SessionService` (login, JWT, refresh rotation, logout), and `PasswordService` (forgot/reset password). All cryptographic primitives (SHA-256, HMAC-SHA256, random token generation) are centralised in a stateless `SecurityUtils` singleton imported directly wherever needed — no constructor injection overhead. Token generation and URL-building live in a shared `TokenService` / `TokenRepo` pair (`src/shared/tokens/`), decoupling action-link issuance from the Auth domain entirely. This means any future module can issue short-lived action URLs without touching Auth. The timing-attack dummy `bcrypt.compare` and anti-enumeration silent return are explicitly preserved in `SessionService` and `PasswordService` respectively.
+
+**Event-driven architecture with an in-process EventBus**
+
+Domain services (`AuthService`, `OrderService`, `PaymentService`, `ProductService`) emit typed events via a singleton `EventBus` (Node.js `EventEmitter`). Subscriber classes listen to these events and enqueue BullMQ jobs — they are the only coupling point between producers and consumers. This keeps service methods free of email/image/queue logic and makes adding new side-effects (e.g., push notifications) a matter of adding a subscriber, not touching existing services.
+
+**Separate worker process with strategy-pattern job dispatch**
+
+Workers run in an independent Node.js process (`worker.server.ts`), completely decoupled from the HTTP API. Each worker holds a `Map<jobName, IJobStrategy>` and delegates `job.name` lookup at runtime. Adding a new job type requires only a new strategy class and a map entry — no modification to the worker core. The worker process handles graceful shutdown (`SIGTERM`/`SIGINT`): it closes all BullMQ workers, disconnects Redis, and disconnects Prisma before exiting.
+
+**BullMQ repeatable jobs replace node-cron**
+
+All scheduled cleanup tasks (expired tokens, stale carts, soft-deleted users, abandoned orders, orphaned Cloudinary images) are now registered as BullMQ repeatable jobs via `Queue.upsertJobScheduler()`. Unlike in-process cron, BullMQ jobs survive server restarts, support automatic retries, and are visible in the Bull Board UI. The scheduler registration is idempotent — the same cron expression is safe to re-register on every worker boot.
+
+**Layered email service with pluggable providers**
+
+Email delivery is split into three layers: an infrastructure transport layer (`IEmailProvider` with `MailtrapProvider` and `BrevoProvider`), a business logic layer (`EmailService` with six typed methods and EJS templates), and an execution layer (six `IEmailStrategy` classes inside `EmailWorker`). `EmailProviderFactory.create()` reads `EMAIL_PROVIDER` from env and returns the correct transport. Switching providers requires only an env change — no code change.
+
 **Feature-based modular architecture**
 
 Grouping files by domain rather than by technical layer (e.g., all controllers in one folder) keeps related code co-located. When working on the `payment` feature, everything relevant — routes, controller, service, repository, validator — is in `src/modules/payment/`. This reduces cross-file navigation and makes the impact of a change easier to reason about.
@@ -519,10 +563,6 @@ Each `OrderItem` stores `price` and `name` from the product at the time of purch
 
 When a user places an order, the selected shipping address is copied into a separate `OrderAddressSnapshot` record. This preserves the exact delivery details at the time of purchase, independent of any future edits to the user's address book.
 
-**In-process `node-cron` for background jobs**
-
-Cron jobs run inside the same Node.js process as the API. This is operationally simple and sufficient for the current scale. The trade-off is reliability: if the server crashes mid-job, the job is abandoned with no retry mechanism. A Redis-backed job queue (BullMQ) would solve this and is the intended next step.
-
 **Raw SQL for dashboard aggregations (`$queryRaw`)**
 
 The dashboard's analytical queries — `DATE_TRUNC` for time-bucket grouping, `COALESCE(MAX(...))` for dead-stock detection, CTEs for repeat-customer classification — cannot be expressed efficiently through Prisma's typed query builder. `$queryRaw` with `Prisma.sql` tagged templates is used instead. This allows leveraging the full power of SQL for complex aggregations while still benefiting from Prisma's connection management and transaction support.
@@ -533,10 +573,11 @@ The dashboard's analytical queries — `DATE_TRUNC` for time-bucket grouping, `C
 
 - **Redis caching for catalog queries** — `GET /api/v1/products` hits the database on every request. A short-TTL Redis cache would reduce database load under real traffic.
 - **Redis caching for dashboard stats** — The dashboard's nine parallel aggregation queries are compute-heavy. A short-TTL Redis cache (e.g. 5 minutes) keyed by interval would make repeated dashboard loads near-instant and drastically reduce database pressure during peak admin usage.
-- **Migrate background jobs to BullMQ** — Replace in-process `node-cron` with BullMQ for reliable job retries, delayed scheduling, concurrency control, and observability.
 - **Per-user rate limiting on authenticated routes** — The current rate limiter is IP-based. Authenticated routes should additionally enforce limits keyed by user ID to handle shared-IP scenarios (e.g., corporate networks).
 - **Cursor-based pagination** — The current product list uses offset pagination (`skip`/`take`). Cursor-based pagination is more stable for large, frequently updated catalogs.
-- **Unit test coverage** — The existing suite covers integration-level behavior. Unit tests for service-layer business logic (particularly the checkout transaction and token rotation) would add a valuable safety net for refactoring.
+- **Unit test coverage** — The existing suite covers integration-level behavior. Unit tests for the new service classes (`IdentityService`, `SessionService`, `PasswordService`, `TokenService`) and worker strategies would add a valuable safety net for future refactoring.
+- **BullMQ job observability & alerting** — Integrate dead-letter queue handling and alerting (e.g., Slack webhook on repeated job failures) to make the worker process production-ready beyond Bull Board.
+- **Email change flow** — Add a user-initiated email-change confirmation flow using the existing `TokenService` infrastructure: emit a `USER_REQUEST_EMAIL_CHANGE` event, enqueue a confirmation email via `UserSubscriber`, and verify the new address via a `ChangeEmailStrategy` in `EmailWorker`.
 - **Downloadable analytics reports** — Allow admins to export the dashboard data as CSV or PDF files for offline reporting and stakeholder sharing.
 
 ---

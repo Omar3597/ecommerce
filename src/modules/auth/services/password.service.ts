@@ -2,14 +2,14 @@ import bcrypt from "bcrypt";
 import AppError from "../../../shared/errors/appError";
 import { forgotPasswordInput } from "../validators/auth.validator";
 import { AuthRepo } from "../repositories/auth.repo";
-import { SecurityUtils } from "../../../shared/utils/security.utils";
+import { TokenService, ActionTokenType } from "../../../shared/tokens";
 import baseLogger from "../../../config/logger";
 import { EventBus } from "../../../infra/event-bus";
 import { EVENT_NAMES } from "../../../events";
 
 export class PasswordService {
   private logger = baseLogger.child({ module: "password" });
-  private securityUtils = new SecurityUtils();
+  private tokenService = new TokenService();
 
   constructor(private readonly authRepo: AuthRepo) {}
 
@@ -35,16 +35,14 @@ export class PasswordService {
   }
 
   async resetPassword(token: string, password: string) {
-    const hashedToken = this.securityUtils.hashTokenSHA256(token);
-    const storedToken =
-      await this.authRepo.findValidPasswordResetToken(hashedToken);
+    const payload = await this.tokenService.verifyAndConsumeToken(
+      token,
+      ActionTokenType.PASSWORD_RESET,
+    );
 
-    if (!storedToken) {
+    if (!payload) {
       this.logger.warn(
-        {
-          action: "PASSWORD_RESET_FAILED",
-          userId: null,
-        },
+        { action: "PASSWORD_RESET_FAILED", userId: null },
         "Failed password reset attempt due to invalid or expired token",
       );
       throw new AppError(400, "Token is invalid or has expired");
@@ -52,22 +50,18 @@ export class PasswordService {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const result = await this.authRepo.resetPasswordAndRevokeTokens(
-      storedToken.userId,
-      hashedPassword,
-    );
+    await this.authRepo.resetPasswordAndRevokeTokens(payload.userId, hashedPassword);
+
     this.logger.info(
-      {
-        action: "PASSWORD_RESET_SUCCESS",
-        userId: storedToken.userId,
-      },
+      { action: "PASSWORD_RESET_SUCCESS", userId: payload.userId },
       "Password reset successfully",
     );
+
     EventBus.getInstance().emit(EVENT_NAMES.USER.PASSWORD_CHANGED, {
-      userId: storedToken.userId,
-      email: storedToken.user.email,
+      userId: payload.userId,
+      email: payload.email,
+      name: payload.name,
       expiresInMinutes: 10,
     });
-    return result;
   }
 }

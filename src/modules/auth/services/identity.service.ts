@@ -2,15 +2,14 @@ import bcrypt from "bcrypt";
 import AppError from "../../../shared/errors/appError";
 import { SignupInput } from "../validators/auth.validator";
 import { AuthRepo } from "../repositories/auth.repo";
-
-import { SecurityUtils } from "../../../shared/utils/security.utils";
+import { TokenService, ActionTokenType } from "../../../shared/tokens";
 import baseLogger from "../../../config/logger";
 import { EventBus } from "../../../infra/event-bus";
 import { EVENT_NAMES } from "../../../events";
 
 export class IdentityService {
   private logger = baseLogger.child({ module: "identity" });
-  private securityUtils = new SecurityUtils();
+  private tokenService = new TokenService();
 
   constructor(private readonly authRepo: AuthRepo) {}
 
@@ -56,19 +55,21 @@ export class IdentityService {
   }
 
   async verifyEmail(token: string) {
-    const hashedToken = this.securityUtils.hashTokenSHA256(token);
-    const storedToken =
-      await this.authRepo.findValidVerificationToken(hashedToken);
+    const payload = await this.tokenService.verifyAndConsumeToken(
+      token,
+      ActionTokenType.VERIFICATION,
+    );
 
-    if (!storedToken) {
+    if (!payload) {
       throw new AppError(400, "Verification token is invalid or has expired");
     }
 
-    await this.authRepo.verifyUserEmail(storedToken.userId, storedToken.id);
+    await this.authRepo.verifyUserEmail(payload.userId);
+
     this.logger.info(
       {
         action: "EMAIL_VERIFICATION_SUCCESS",
-        userId: storedToken.userId,
+        userId: payload.userId,
       },
       "Email verified successfully",
     );

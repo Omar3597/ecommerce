@@ -2,6 +2,7 @@ import { getConfig } from "../../config/env";
 import { SecurityUtils } from "../utils/security.utils";
 import { TokenRepo } from "./token.repo";
 import { ActionTokenType } from "./types/action-token-type.enum";
+import type { IActionTokenPayload } from "./types/action-token-payload.interface";
 import AppError from "../errors/appError";
 
 const ACTION_TOKEN_ROUTES: Record<ActionTokenType, string> = {
@@ -12,11 +13,10 @@ const ACTION_TOKEN_ROUTES: Record<ActionTokenType, string> = {
 
 export class TokenService {
   private readonly securityUtils = new SecurityUtils();
-
-  constructor(private readonly tokenRepo: TokenRepo) {}
+  private readonly tokenRepo = new TokenRepo();
 
   async createActionLink(
-    userId: string,
+    payload: IActionTokenPayload,
     type: ActionTokenType,
   ): Promise<string> {
     const rawToken = this.securityUtils.generateRandomToken(32);
@@ -25,17 +25,23 @@ export class TokenService {
     const route = ACTION_TOKEN_ROUTES[type];
     if (!route) throw new AppError(500, `Unknown action token type: ${type}`);
 
+    await this.tokenRepo.setActionToken(hashedToken, type, payload);
+
     const config = getConfig();
-    const url = `${config.BASE_URL}${route}/${rawToken}`;
+    return `${config.BASE_URL}${route}/${rawToken}`;
+  }
 
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-    await this.tokenRepo.createActionToken(
-      userId,
-      hashedToken,
-      type,
-      expiresAt,
-    );
+  async verifyAndConsumeToken(
+    rawToken: string,
+    type: ActionTokenType,
+  ): Promise<IActionTokenPayload | null> {
+    const hashedToken = this.securityUtils.hashTokenSHA256(rawToken);
 
-    return url;
+    const payload = await this.tokenRepo.getActionToken(hashedToken, type);
+    if (!payload) return null;
+
+    await this.tokenRepo.deleteActionToken(hashedToken, type);
+
+    return payload;
   }
 }

@@ -21,12 +21,7 @@ enum OrderStatus {
   CANCELLED
 }
 
-enum TokenType {
-  VERIFICATION
-  PASSWORD_RESET
-  REACTIVATION
-  EMAIL_CHANGE
-}
+
 
 model User {
   id                String    @id @default(uuid())
@@ -48,7 +43,6 @@ model User {
   addresses    Address[]
   orders       Order[]
   refreshToken RefreshToken[]
-  shortTokens  ShortToken[]
   reviews      Review[]
 
   @@map("users")
@@ -217,22 +211,7 @@ model OrderedProductSnapshot {
   @@map("ordered_product_snapshot")
 }
 
-model ShortToken {
-  id        String    @id @default(uuid())
-  token     String    @unique
-  type      TokenType
-  expiresAt DateTime
-  createdAt DateTime  @default(now())
-  userId    String
 
-  ///relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, type])
-  @@index([userId])
-  @@index([expiresAt])
-  @@map("short_tokens")
-}
 
 model RefreshToken {
   id        String   @id @default(uuid())

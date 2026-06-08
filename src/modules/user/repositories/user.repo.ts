@@ -26,9 +26,6 @@ export class UserRepo {
       prisma.refreshToken.deleteMany({
         where: { userId },
       }),
-      prisma.shortToken.deleteMany({
-        where: { userId },
-      }),
     ]);
   }
 
@@ -46,34 +43,13 @@ export class UserRepo {
     });
   }
 
-  findValidEmailChangeTokenForUser(hashedToken: string, userId: string) {
-    return prisma.shortToken.findFirst({
-      where: {
-        token: hashedToken,
-        type: "EMAIL_CHANGE",
-        userId,
-        expiresAt: { gt: new Date() },
+  updateEmailAndClearPending(userId: string, email: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        email,
+        pendingEmail: null,
       },
-      include: { user: true },
     });
-  }
-
-  updateEmailAndDeleteShortToken(
-    userId: string,
-    email: string,
-    tokenId: string,
-  ) {
-    return prisma.$transaction([
-      prisma.user.update({
-        where: { id: userId },
-        data: {
-          email,
-          pendingEmail: null,
-        },
-      }),
-      prisma.shortToken.delete({
-        where: { id: tokenId },
-      }),
-    ]);
   }
 }

@@ -7,14 +7,16 @@ import {
   verifyEmailChangeInput,
 } from "../validators/user.validator";
 import { User } from "@prisma/client";
-import crypto from "crypto";
 import { UserRepo } from "../repositories/user.repo";
+import { TokenService, ActionTokenType } from "../../../shared/tokens";
 import baseLogger from "../../../config/logger";
 import { EventBus } from "../../../infra/event-bus";
 import { EVENT_NAMES } from "../../../events";
 
 export class UserService {
   private logger = baseLogger.child({ module: "user" });
+  private tokenService = new TokenService();
+
   constructor(private readonly userRepo: UserRepo) {}
 
   async updateProfile(user: User, data: updateProfileInput) {
@@ -39,10 +41,7 @@ export class UserService {
 
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-    await this.userRepo.updatePasswordAndRevokeAllTokens(
-      user.id,
-      hashedPassword,
-    );
+    await this.userRepo.updatePasswordAndRevokeAllTokens(user.id, hashedPassword);
 
     this.logger.warn(
       {
@@ -63,10 +62,7 @@ export class UserService {
       throw new AppError(400, "Email already in use");
     }
 
-    const updatedUser = await this.userRepo.setPendingEmail(
-      user.id,
-      data.email,
-    );
+    const updatedUser = await this.userRepo.setPendingEmail(user.id, data.email);
 
     EventBus.getInstance().emit(EVENT_NAMES.USER.CHANGE_EMAIL_REQUEST, {
       userId: updatedUser.id,
@@ -82,21 +78,21 @@ export class UserService {
   }
 
   async verifyEmailChange(user: User, data: verifyEmailChangeInput) {
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(data.token)
-      .digest("hex");
-
-    const storedToken = await this.userRepo.findValidEmailChangeTokenForUser(
-      hashedToken,
-      user.id,
+    const payload = await this.tokenService.verifyAndConsumeToken(
+      data.token,
+      ActionTokenType.EMAIL_CHANGE,
     );
 
-    if (!storedToken) {
+    if (!payload) {
       throw new AppError(400, "Token is invalid or has expired");
     }
 
-    const { pendingEmail } = storedToken.user;
+    // Ensure this token belongs to the authenticated user
+    if (payload.userId !== user.id) {
+      throw new AppError(400, "Token is invalid or has expired");
+    }
+
+    const { pendingEmail } = user;
     if (!pendingEmail) {
       throw new AppError(400, "No pending email change request found");
     }
@@ -105,11 +101,7 @@ export class UserService {
       throw new AppError(400, "Email already in use");
     }
 
-    await this.userRepo.updateEmailAndDeleteShortToken(
-      user.id,
-      pendingEmail,
-      storedToken.id,
-    );
+    await this.userRepo.updateEmailAndClearPending(user.id, pendingEmail);
 
     this.logger.warn(
       {

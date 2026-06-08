@@ -73,25 +73,11 @@ export class AuthRepo {
     });
   }
 
-  findValidPasswordResetToken(token: string) {
-    return prisma.shortToken.findFirst({
-      where: {
-        token,
-        type: "PASSWORD_RESET",
-        expiresAt: { gt: new Date() },
-      },
-      include: { user: true },
-    });
-  }
-
   resetPasswordAndRevokeTokens(userId: string, hashedPassword: string) {
     return prisma.$transaction([
       prisma.user.update({
         where: { id: userId },
         data: { password: hashedPassword, passwordChangedAt: new Date() },
-      }),
-      prisma.shortToken.deleteMany({
-        where: { userId },
       }),
       prisma.refreshToken.deleteMany({
         where: { userId },
@@ -99,26 +85,11 @@ export class AuthRepo {
     ]);
   }
 
-  findValidVerificationToken(token: string) {
-    return prisma.shortToken.findFirst({
-      where: {
-        token,
-        type: "VERIFICATION",
-        expiresAt: { gt: new Date() },
-      },
+  verifyUserEmail(userId: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { isVerified: true },
     });
-  }
-
-  verifyUserEmail(userId: string, shortTokenId: string) {
-    return prisma.$transaction([
-      prisma.user.update({
-        where: { id: userId },
-        data: { isVerified: true },
-      }),
-      prisma.shortToken.delete({
-        where: { id: shortTokenId },
-      }),
-    ]);
   }
 
   countSessionsByUserId(userId: string) {

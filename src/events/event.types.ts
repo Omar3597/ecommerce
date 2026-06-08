@@ -23,8 +23,6 @@ export interface UserPasswordChangedPayload {
   userId: string;
   email: string;
   name: string;
-  changedAt: string;
-  supportUrl: string;
 }
 
 export interface UserChangeEmailPayload {

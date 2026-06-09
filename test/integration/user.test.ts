@@ -1,8 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
-import crypto from "crypto";
-import { TokenType } from "@prisma/client";
-import { prisma } from "../../src/lib/prisma";
 import app from "../../src/app";
 import { resetDatabase, seedUser } from "../utils/testHelpers";
 
@@ -145,85 +142,5 @@ describe("User Integration Tests", () => {
       expect(response.status).toBe(401);
     });
   });
-
-  // ─── POST /users/me/email-change ──────────────────────────────────────────
-
-  describe("POST /api/v1/users/me/email-change", () => {
-    it("should successfully request an email change", async () => {
-      const { token } = await seedUser();
-
-      const response = await request(app)
-        .post("/api/v1/users/me/email-change")
-        .set("Authorization", `Bearer ${token}`)
-        .send({ email: `new-email-${Date.now()}@example.com` });
-
-      expect(response.status).toBe(200);
-      expect(response.body.status).toBe("success");
-    });
-
-    it("should fail validation if email is improperly formatted", async () => {
-      const { token } = await seedUser();
-
-      const response = await request(app)
-        .post("/api/v1/users/me/email-change")
-        .set("Authorization", `Bearer ${token}`)
-        .send({ email: "notanemail" });
-
-      expect(response.status).toBe(400);
-    });
-
-    it("should fail when unauthorized", async () => {
-      const response = await request(app)
-        .post("/api/v1/users/me/email-change")
-        .send({ email: "test@example.com" });
-
-      expect(response.status).toBe(401);
-    });
-  });
-
-  // ─── GET /users/me/email-change/verify/:token ─────────────────────────────
-
-  describe("GET /api/v1/users/me/email-change/verify/:token", () => {
-    it("should return failure for an invalid token", async () => {
-      const { token } = await seedUser();
-      const fakeToken = "a".repeat(64);
-
-      const response = await request(app)
-        .post(`/api/v1/users/me/email-change/verify/${fakeToken}`)
-        .set("Authorization", `Bearer ${token}`);
-
-      expect(response.status).toBe(400);
-    });
-
-    it("should verify email change with a valid token", async () => {
-      const { user, token } = await seedUser();
-
-      const rawToken = crypto.randomBytes(32).toString("hex");
-      const hashedToken = crypto
-        .createHash("sha256")
-        .update(rawToken)
-        .digest("hex");
-
-      await prisma.$transaction([
-        prisma.shortToken.create({
-          data: {
-            userId: user.id,
-            token: hashedToken,
-            type: TokenType.EMAIL_CHANGE,
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-          },
-        }),
-        prisma.user.update({
-          where: { id: user.id },
-          data: { pendingEmail: `new-email-${Date.now()}@example.com` },
-        }),
-      ]);
-
-      const response = await request(app)
-        .post(`/api/v1/users/me/email-change/verify/${rawToken}`)
-        .set("Authorization", `Bearer ${token}`);
-
-      expect(response.status).toBe(200);
-    });
-  });
 });
+

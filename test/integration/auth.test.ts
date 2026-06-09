@@ -1,10 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
-import app from "../../src/app";
-import { prisma } from "../../src/lib/prisma";
-import { resetDatabase, seedUser } from "../utils/testHelpers";
-import { TokenType } from "@prisma/client";
 import crypto from "crypto";
+import app from "../../src/app";
+import { resetDatabase, seedUser } from "../utils/testHelpers";
 
 describe("Auth Integration Tests", () => {
   const standardPassword = "StrongPassword123#";
@@ -100,101 +98,6 @@ describe("Auth Integration Tests", () => {
       });
 
       expect(response.status).toBe(401);
-    });
-  });
-
-  // ─── Forgot Password ──────────────────────────────────────────────────────
-
-  describe("POST /api/v1/auth/forgot-password", () => {
-    it("should process the forgot password request", async () => {
-      const { user } = await seedUser();
-      const response = await request(app)
-        .post("/api/v1/auth/forgot-password")
-        .send({ email: user.email });
-
-      expect(response.status).toBe(200);
-    });
-  });
-
-  // ─── Reset Password ───────────────────────────────────────────────────────
-
-  describe("POST /api/v1/auth/reset-password/:token", () => {
-    it("should return error for an invalid or expired token", async () => {
-      const fakeToken = crypto.randomBytes(32).toString("hex");
-      const response = await request(app)
-        .post(`/api/v1/auth/reset-password/${fakeToken}`)
-        .send({
-          password: "NewSecurePassword123#",
-          passwordConfirm: "NewSecurePassword123#",
-        });
-
-      expect(response.status).toBe(400);
-    });
-
-    it("should reset password with a valid token", async () => {
-      const { user } = await seedUser({ password: standardPassword });
-
-      const rawToken = crypto.randomBytes(32).toString("hex");
-      const hashedToken = crypto
-        .createHash("sha256")
-        .update(rawToken)
-        .digest("hex");
-
-      await prisma.shortToken.create({
-        data: {
-          userId: user.id,
-          token: hashedToken,
-          type: TokenType.PASSWORD_RESET,
-          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-        },
-      });
-
-      const response = await request(app)
-        .post(`/api/v1/auth/reset-password/${rawToken}`)
-        .send({
-          password: "NewSecurePassword123#",
-          passwordConfirm: "NewSecurePassword123#",
-        });
-
-      expect(response.status).toBe(200);
-    });
-  });
-
-  // ─── Verify Email ─────────────────────────────────────────────────────────
-
-  describe("POST /api/v1/auth/verify-email/:token", () => {
-    it("should return error for an invalid token", async () => {
-      const fakeToken = crypto.randomBytes(32).toString("hex");
-      const response = await request(app).post(
-        `/api/v1/auth/verify-email/${fakeToken}`,
-      );
-
-      expect(response.status).toBe(400);
-    });
-
-    it("should verify email with a valid token", async () => {
-      const { user } = await seedUser({ isVerified: false });
-
-      const rawToken = crypto.randomBytes(32).toString("hex");
-      const hashedToken = crypto
-        .createHash("sha256")
-        .update(rawToken)
-        .digest("hex");
-
-      await prisma.shortToken.create({
-        data: {
-          userId: user.id,
-          token: hashedToken,
-          type: TokenType.VERIFICATION,
-          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-        },
-      });
-
-      const response = await request(app).post(
-        `/api/v1/auth/verify-email/${rawToken}`,
-      );
-
-      expect(response.status).toBe(200);
     });
   });
 

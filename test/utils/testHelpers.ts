@@ -1,7 +1,11 @@
 import { Role } from "@prisma/client";
 import { prisma } from "../../src/lib/prisma";
+import { cacheAdapter } from "../../src/infra/cache";
+import { ActionTokenType } from "../../src/shared/tokens";
+import type { IActionTokenPayload } from "../../src/shared/tokens";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { getConfig } from "../../src/config/env";
 
 const config = getConfig();
@@ -67,6 +71,33 @@ export const seedUser = async (
   });
 
   return { user, token, password };
+};
+
+// ─── Action Token Factory ──────────────────────────────────────────────────────
+
+/**
+ * Seeds an action token directly into the Redis cache (ioredis-mock in test env),
+ * mirroring exactly what TokenService.createActionLink does internally.
+ * Returns the raw token to be passed to the API endpoint.
+ */
+export const seedActionToken = async (
+  user: { id: string; name: string; email: string },
+  type: ActionTokenType,
+): Promise<string> => {
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto.createHash("sha256").update(rawToken).digest("hex");
+
+  const payload: IActionTokenPayload = {
+    userId: user.id,
+    name: user.name,
+    email: user.email,
+  };
+
+  // Must match TokenRepo.buildKey format: action_token:<TYPE>:<hashedToken>
+  const key = `action_token:${type}:${hashedToken}`;
+  await cacheAdapter.set(key, payload, 10 * 60);
+
+  return rawToken;
 };
 
 // ─── Category Factory ──────────────────────────────────────────────────────────

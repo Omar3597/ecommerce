@@ -50,7 +50,10 @@ export class PasswordService {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    await this.authRepo.resetPasswordAndRevokeTokens(payload.userId, hashedPassword);
+    await this.authRepo.resetPasswordAndRevokeTokens(
+      payload.userId,
+      hashedPassword,
+    );
 
     this.logger.info(
       { action: "PASSWORD_RESET_SUCCESS", userId: payload.userId },
@@ -61,7 +64,6 @@ export class PasswordService {
       userId: payload.userId,
       email: payload.email,
       name: payload.name,
-      expiresInMinutes: 10,
     });
   }
 }

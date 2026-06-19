@@ -8,6 +8,12 @@ export class PasswordChangedEmailStrategy implements IEmailStrategy {
 
   async execute(job: Job<UserPasswordChangedPayload>): Promise<void> {
     console.log("Executing PasswordChangedEmailStrategy ...");
-    await this.emailService.sendPasswordChanged(job.data);
+    const { name, email } = job.data;
+    await this.emailService.sendPasswordChanged({
+      name,
+      email,
+      changedAt: new Date().toLocaleString(),
+      supportUrl: "support@ecommerce.com",
+    });
   }
 }

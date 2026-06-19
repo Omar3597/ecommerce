@@ -1,8 +1,10 @@
 import dotenv from "dotenv";
 
 const env = process.env.NODE_ENV || "development";
-const envFile = env === "development" ? ".env" : `.env.${env}`;
-dotenv.config({ path: envFile });
+if (env !== "production") {
+  const envFile = env === "development" ? ".env" : `.env.${env}`;
+  dotenv.config({ path: envFile });
+}
 
 interface IConfig {
   DB_HOST: string;
@@ -23,6 +25,7 @@ interface IConfig {
   REDIS_HOST: string;
   REDIS_PORT: number;
   REDIS_PASSWORD: string;
+  REDIS_URL: string;
 
   // Email
   EMAIL_PROVIDER: "brevo" | "mailtrap";
@@ -67,13 +70,7 @@ export const getConfig = (): IConfig => {
   // 1. Core vars — always required
   checkMissingVars(
     [
-      "DB_HOST",
-      "DB_PORT",
-      "DB_USER",
-      "DB_PASSWORD",
-      "DB_NAME",
       "DATABASE_URL",
-      "APP_PORT",
       "BASE_URL",
       "JWT_SECRET",
       "REFRESH_TOKEN_SECRET",
@@ -90,6 +87,7 @@ export const getConfig = (): IConfig => {
         "REDIS_HOST",
         "REDIS_PORT",
         "REDIS_PASSWORD",
+        "REDIS_URL",
         "EMAIL_PROVIDER",
         "MAILTRAP_HOST",
         "MAILTRAP_PORT",
@@ -113,32 +111,35 @@ export const getConfig = (): IConfig => {
   const { env: processEnv } = process;
 
   return {
-    DB_HOST: processEnv.DB_HOST!,
-    DB_PORT: parseInt(processEnv.DB_PORT!, 10),
-    DB_USER: processEnv.DB_USER!,
-    DB_PASSWORD: processEnv.DB_PASSWORD!,
-    DB_NAME: processEnv.DB_NAME!,
+    DB_HOST: processEnv.DB_HOST ?? "localhost",
+    DB_PORT: processEnv.DB_PORT ? parseInt(processEnv.DB_PORT, 10) : 5432,
+    DB_USER: processEnv.DB_USER ?? "postgres",
+    DB_PASSWORD: processEnv.DB_PASSWORD ?? "",
+    DB_NAME: processEnv.DB_NAME ?? "ecommerce_db",
     DATABASE_URL: processEnv.DATABASE_URL!,
     env: NODE_ENV,
-    APP_PORT: parseInt(processEnv.APP_PORT!, 10),
+    APP_PORT: processEnv.APP_PORT ? parseInt(processEnv.APP_PORT, 10) : 3000,
     BASE_URL: processEnv.BASE_URL!,
     REDIS_HOST: processEnv.REDIS_HOST ?? "dummy_redis_host",
-    REDIS_PORT: parseInt(processEnv.REDIS_PORT!, 10) ?? 0,
+    REDIS_PORT: processEnv.REDIS_PORT ? parseInt(processEnv.REDIS_PORT, 10) : 0,
     REDIS_PASSWORD: processEnv.REDIS_PASSWORD ?? "dummy_redis_password",
+    REDIS_URL: processEnv.REDIS_URL ?? "dummy_redis_url",
     JWT_SECRET: processEnv.JWT_SECRET!,
     REFRESH_TOKEN_SECRET: processEnv.REFRESH_TOKEN_SECRET!,
     MAX_CART_QUANTITY: parseInt(processEnv.MAX_CART_QUANTITY!, 10),
     MAX_ACTIVE_SESSIONS: parseInt(processEnv.MAX_ACTIVE_SESSIONS!, 10),
 
     // Email with safe defaults for 'test'
-    EMAIL_PROVIDER: (processEnv.EMAIL_PROVIDER as "brevo" | "mailtrap") ?? "mailtrap",
+    EMAIL_PROVIDER:
+      (processEnv.EMAIL_PROVIDER as "brevo" | "mailtrap") ?? "mailtrap",
     MAILTRAP_HOST: processEnv.MAILTRAP_HOST ?? "localhost",
     MAILTRAP_PORT: parseInt(processEnv.MAILTRAP_PORT ?? "1025", 10),
     MAILTRAP_USER: processEnv.MAILTRAP_USER ?? "",
     MAILTRAP_PASS: processEnv.MAILTRAP_PASS ?? "",
     BREVO_API_KEY: processEnv.BREVO_API_KEY ?? "",
     EMAIL_FROM_NAME: processEnv.EMAIL_FROM_NAME ?? "E-Commerce",
-    EMAIL_FROM_ADDRESS: processEnv.EMAIL_FROM_ADDRESS ?? "noreply@ecommerce.com",
+    EMAIL_FROM_ADDRESS:
+      processEnv.EMAIL_FROM_ADDRESS ?? "noreply@ecommerce.com",
 
     STRIPE_SECRET_KEY: processEnv.STRIPE_SECRET_KEY ?? "sk_test_dummy",
     STRIPE_WEBHOOK_SECRET: processEnv.STRIPE_WEBHOOK_SECRET ?? "whsec_dummy",

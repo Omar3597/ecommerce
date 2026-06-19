@@ -3,6 +3,7 @@ import { OrderRepo } from "../repositories/order.repo";
 import { OrderService } from "../services/order.service";
 import { OrderController } from "../controllers/order.controller";
 import { paymentRouter } from "../../payment";
+import { orderLimiter, userLimiter } from "../../../middlewares/rateLimit";
 const orderRouter = Router();
 
 const orderRepo = new OrderRepo();
@@ -11,10 +12,10 @@ const controller = new OrderController(service);
 
 orderRouter
   .route("/")
-  .get(controller.getAllOrders)
-  .post(controller.createOrderFromCart);
+  .get(userLimiter, controller.getAllOrders)
+  .post(orderLimiter, controller.createOrderFromCart);
 
-orderRouter.route("/:orderId").get(controller.getOrderById);
+orderRouter.route("/:orderId").get(userLimiter, controller.getOrderById);
 
 orderRouter.use("/:orderId/payment", paymentRouter);
 

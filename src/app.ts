@@ -3,13 +3,21 @@ import cors from "cors";
 import crypto from "crypto";
 import pinoHttp from "pino-http";
 import hpp from "hpp";
+import helmet from "helmet";
+import { apiLimiter } from "./middlewares/rateLimit";
 import cookieParser from "cookie-parser";
 import logger, { requestContext } from "./config/logger";
 import { errHandler } from "./shared/errors/errHandler";
 import { paymentWebhookHandler } from "./modules/payment";
 import rootRouter from "./routes";
 
+
+
 const app = express();
+
+// Trust the first proxy hop (Heroku's router) so express-rate-limit
+// reads the real client IP from X-Forwarded-For instead of the proxy IP.
+app.set("trust proxy", 1);
 
 const httpLogger = pinoHttp({
   logger,
@@ -49,6 +57,8 @@ app.use((req, res, next) => {
   });
 });
 
+app.use(helmet());
+
 app.use(
   cors({
     origin: "http://localhost:3000",
@@ -58,6 +68,7 @@ app.use(
 
 app.use(cookieParser());
 
+// Stripe webhook must receive the raw body before express.json() parses it
 app.post(
   "/api/v1/payments/webhook",
   express.raw({ type: "application/json" }),
@@ -68,7 +79,7 @@ app.use(express.json());
 
 app.use(hpp());
 
-app.use("/api/v1", rootRouter);
+app.use("/api/v1", apiLimiter, rootRouter);
 
 app.use("*", (req, res, next) => {
   res.status(404).json({

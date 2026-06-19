@@ -2,6 +2,7 @@ import { Router } from "express";
 import { CartController } from "../controllers/cart.controller";
 import { CartService } from "../services/cart.service";
 import { CartRepo } from "../repositories/cart.repo";
+import { userLimiter } from "../../../middlewares/rateLimit";
 
 const cartRouter = Router();
 
@@ -12,13 +13,13 @@ const cartController = new CartController(cartService);
 
 cartRouter
   .route("/")
-  .get(cartController.getCart)
-  .post(cartController.addItem)
-  .delete(cartController.clearCart);
+  .get(userLimiter, cartController.getCart)
+  .post(userLimiter, cartController.addItem)
+  .delete(userLimiter, cartController.clearCart);
 
 cartRouter
   .route("/:itemId")
-  .patch(cartController.updateItem)
-  .delete(cartController.removeItem);
+  .patch(userLimiter, cartController.updateItem)
+  .delete(userLimiter, cartController.removeItem);
 
 export default cartRouter;

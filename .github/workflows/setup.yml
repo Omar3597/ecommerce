@@ -1,0 +1,93 @@
+name: Setup - Provision Heroku Infrastructure
+
+# Run this ONCE to provision the Postgres and Redis add-ons on Heroku.
+# Trigger it manually from the GitHub Actions UI:
+#   Actions -> "Setup - Provision Heroku Infrastructure" -> Run workflow
+#
+# It is fully idempotent — safe to run multiple times. If an add-on already
+# exists it is skipped; no errors are thrown.
+on:
+  workflow_dispatch:
+    inputs:
+      postgres_plan:
+        description: "Heroku Postgres plan"
+        required: false
+        default: "essential-0"
+      redis_plan:
+        description: "Heroku Redis plan"
+        required: false
+        default: "mini"
+
+jobs:
+  provision:
+    name: Provision Add-ons
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Install Heroku CLI
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
+
+      # 2. Provision Heroku Postgres (idempotent)
+      #    Skips if already attached to the app.
+      - name: Provision Heroku Postgres
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          APP=${{ secrets.HEROKU_APP_NAME }}
+          PLAN=${{ github.event.inputs.postgres_plan }}
+
+          if heroku addons:info heroku-postgresql --app "$APP" > /dev/null 2>&1; then
+            echo "Heroku Postgres already provisioned, skipping."
+          else
+            echo "Provisioning Heroku Postgres ($PLAN)..."
+            heroku addons:create heroku-postgresql:"$PLAN" --app "$APP" --wait
+            echo "Heroku Postgres provisioned."
+          fi
+
+      # 3. Provision Heroku Redis (idempotent)
+      #    Skips if already attached to the app.
+      - name: Provision Heroku Redis
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          APP=${{ secrets.HEROKU_APP_NAME }}
+          PLAN=${{ github.event.inputs.redis_plan }}
+
+          if heroku addons:info heroku-redis --app "$APP" > /dev/null 2>&1; then
+            echo "Heroku Redis already provisioned, skipping."
+          else
+            echo "Provisioning Heroku Redis ($PLAN)..."
+            heroku addons:create heroku-redis:"$PLAN" --app "$APP" --wait
+            echo "Heroku Redis provisioned."
+          fi
+
+      # 4. Remove any manually-set vars that shadow the add-on URLs.
+      #    These are Docker Compose-internal hostnames (postgres, redis) that
+      #    don't resolve on Heroku's network. The add-ons inject the real URLs
+      #    automatically — manual overrides must be cleared.
+      - name: Remove Docker Compose leftover config vars
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          APP=${{ secrets.HEROKU_APP_NAME }}
+          VARS_TO_UNSET="DATABASE_URL DB_HOST DB_PORT DB_USER DB_PASSWORD DB_NAME REDIS_HOST REDIS_PORT REDIS_PASSWORD"
+
+          echo "Unsetting Docker Compose vars that conflict with add-on URLs..."
+          for VAR in $VARS_TO_UNSET; do
+            if heroku config:get "$VAR" --app "$APP" > /dev/null 2>&1; then
+              heroku config:unset "$VAR" --app "$APP"
+              echo "  Unset $VAR"
+            else
+              echo "  $VAR not set, skipping."
+            fi
+          done
+
+      # 5. Print the injected config vars so you can verify the URLs are set
+      - name: Show injected config vars
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          echo "--- Heroku Config Vars (Redis & Database) ---"
+          heroku config --app ${{ secrets.HEROKU_APP_NAME }} \
+            | grep -E "DATABASE_URL|REDIS_URL" || echo "WARNING: No DATABASE_URL or REDIS_URL found."

@@ -1,4 +1,4 @@
-import { Processor, Worker, WorkerOptions } from "bullmq";
+import { Processor, Worker, WorkerOptions, type ConnectionOptions } from "bullmq";
 import { QUEUE_NAMES } from "./queue.constants";
 import { IQueueClient } from "./queue.interface";
 
@@ -11,7 +11,7 @@ export class WorkerFactory {
     opts?: Omit<WorkerOptions, "connection">,
   ): Worker<T> {
     const workerOptions: WorkerOptions = {
-      connection: this.client.getConnection(),
+      connection: this.client.getConnection() as ConnectionOptions,
       concurrency: 5,
       ...opts,
     };

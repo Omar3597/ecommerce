@@ -1,7 +1,9 @@
-import Redis from "ioredis";
+import Redis, { type RedisOptions } from "ioredis";
 import { IQueueClient } from "./queue.interface";
 import { getConfig } from "../../config/env";
 import logger from "../../config/logger";
+
+const config = getConfig();
 
 export class QueueClient implements IQueueClient {
   private static instance: QueueClient;
@@ -9,13 +11,21 @@ export class QueueClient implements IQueueClient {
 
   private constructor() {
     const config = getConfig();
-    this.connection = new Redis({
-      host: config.REDIS_HOST,
-      port: config.REDIS_PORT,
-      password: config.REDIS_PASSWORD,
+    const redisOptions: RedisOptions = {
       maxRetriesPerRequest: null,
       enableReadyCheck: false,
-    });
+    };
+
+    if (
+      process.env.REDIS_URL &&
+      process.env.REDIS_URL.startsWith("rediss://")
+    ) {
+      redisOptions.tls = {
+        rejectUnauthorized: false,
+      };
+    }
+
+    this.connection = new Redis(config.REDIS_URL, redisOptions);
 
     this.connection.on("error", (err) => {
       logger.error({ err }, "Queue Redis connection error");

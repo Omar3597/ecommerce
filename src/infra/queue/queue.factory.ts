@@ -1,4 +1,4 @@
-import { Queue } from "bullmq";
+import { Queue, type ConnectionOptions } from "bullmq";
 import { QUEUE_NAMES } from "./queue.constants";
 import { IQueueClient } from "./queue.interface";
 import { QueueRegistry } from "./queue.registry";
@@ -16,7 +16,7 @@ export class QueueFactory {
     }
 
     const newQueue = new Queue(name, {
-      connection: this.client.getConnection(),
+      connection: this.client.getConnection() as ConnectionOptions,
       defaultJobOptions: {
         removeOnComplete: { count: 100 },
         removeOnFail: { count: 500 },

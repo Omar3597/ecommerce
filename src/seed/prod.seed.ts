@@ -1,4 +1,5 @@
 import "dotenv/config";
+import pg from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { getConfig } from "../config/env";
@@ -7,7 +8,12 @@ import logger from "../config/logger";
 
 const config = getConfig();
 
-const adapter = new PrismaPg({ connectionString: config.DATABASE_URL });
+const isProduction = config.env === "production";
+const pool = new pg.Pool({
+  connectionString: config.DATABASE_URL,
+  ssl: isProduction ? { rejectUnauthorized: false } : false,
+});
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function seedManager() {

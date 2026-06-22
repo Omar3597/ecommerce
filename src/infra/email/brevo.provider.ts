@@ -14,7 +14,6 @@ export class BrevoProvider implements IEmailProvider {
   }
 
   async send(options: IMailOptions): Promise<void> {
-    const config = getConfig();
     const fromEmail = config.EMAIL_FROM_ADDRESS;
     const fromName = config.EMAIL_FROM_NAME;
 

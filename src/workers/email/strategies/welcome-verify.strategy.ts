@@ -16,11 +16,19 @@ export class WelcomeVerifyEmailStrategy implements IEmailStrategy {
       { userId, name, email },
       ActionTokenType.VERIFICATION,
     );
-    await this.emailService.sendWelcomeVerify({
-      name,
-      email,
-      verifyUrl,
-      expiresInMinutes,
-    });
+
+    try {
+      await this.emailService.sendWelcomeVerify({
+        name,
+        email,
+        verifyUrl,
+        expiresInMinutes,
+      });
+    } catch (error) {
+      console.error(
+        "Error occurred while sending welcome verify email:",
+        error,
+      );
+    }
   }
 }

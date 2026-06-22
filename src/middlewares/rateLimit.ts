@@ -1,4 +1,5 @@
 import { rateLimit, type Options } from "express-rate-limit";
+import { getConfig } from "../config/env";
 
 type LimiterConfig = {
   windowMinutes: number;
@@ -6,17 +7,20 @@ type LimiterConfig = {
   message: string;
 };
 
-function createRateLimiter(config: LimiterConfig) {
+const config = getConfig();
+
+function createRateLimiter(configrations: LimiterConfig) {
   return rateLimit({
-    windowMs: config.windowMinutes * 60 * 1000,
-    limit: config.maxRequests,
+    windowMs: configrations.windowMinutes * 60 * 1000,
+    limit: configrations.maxRequests,
+    skip: () => config.env === "test",
     standardHeaders: "draft-8",
     legacyHeaders: false,
     handler(req, res, _next, options: Options) {
       res.set("Retry-After", String(options.windowMs / 1000));
       res.status(options.statusCode).json({
         status: "fail",
-        message: config.message,
+        message: configrations.message,
       });
     },
   });
@@ -30,7 +34,7 @@ function createRateLimiter(config: LimiterConfig) {
 export const authLimiter = createRateLimiter({
   windowMinutes: 15,
   maxRequests: 10,
-  message: "Too many attempts from this IP, please try again after 15 minutes.",
+  message: "Too many requests, please try again later.",
 });
 
 /**
@@ -72,7 +76,7 @@ export const userLimiter = createRateLimiter({
 export const orderLimiter = createRateLimiter({
   windowMinutes: 15,
   maxRequests: 20,
-  message: "Too many order requests, please try again after 15 minutes.",
+  message: "Too many requests, please try again later.",
 });
 
 /**

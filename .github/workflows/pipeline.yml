@@ -1,0 +1,86 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "src/**"
+      - "docker-compose.test.yml"
+      - "Dockerfile"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "src/**"
+      - "docker-compose.test.yml"
+      - "Dockerfile"
+
+jobs:
+  # ── 1. Test ────────────────────────────────────────────────────────────────
+  test:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run integration tests
+        run: docker compose -f docker-compose.test.yml up --build --exit-code-from app_test
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.test.yml logs
+
+      - name: Cleanup
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v
+
+  # ── 2. Deploy ──────────────────────────────────────────────────────────────
+  #  Only runs on push to main (not on pull_request) and only if tests pass.
+  deploy:
+    name: Build, Push & Release to Heroku
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Heroku requires '_' as the username and the API key as the password.
+      - name: Log in to Heroku Container Registry
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: echo "$HEROKU_API_KEY" | docker login --username=_ --password-stdin registry.heroku.com
+
+      # PROCESS_TYPE=web → CMD runs migrations then starts the API server.
+      - name: Build web image
+        run: |
+          docker build \
+            --target production \
+            --build-arg PROCESS_TYPE=web \
+            -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web \
+            .
+
+      # PROCESS_TYPE=worker → CMD starts the BullMQ worker process.
+      # Docker layer caching from the previous step makes this effectively free.
+      - name: Build worker image
+        run: |
+          docker build \
+            --target production \
+            --build-arg PROCESS_TYPE=worker \
+            -t registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/worker \
+            .
+
+      - name: Push web image
+        run: docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web
+
+      - name: Push worker image
+        run: docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/worker
+
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Release web & worker dynos
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku container:release web worker --app ${{ secrets.HEROKU_APP_NAME }}

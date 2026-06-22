@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { performance } from "perf_hooks";
-import { PrismaPg } from "@prisma/adapter-pg";
+// import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { getConfig } from "../config/env";
 import { faker } from "@faker-js/faker";
@@ -11,11 +11,21 @@ const config = getConfig();
 
 const connectionString = `${config.DATABASE_URL}`;
 
-const adapter = new PrismaPg({ connectionString });
-const prisma = new PrismaClient({ adapter });
+// const adapter = new PrismaPg({ connectionString });
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: connectionString,
+    },
+  },
+});
 
 async function seedManager() {
-  const managerPass = await bcrypt.hash("manager@1234", 12);
+  if (!config.MANAGER_PASSWORD) {
+    throw new Error("MANAGER_PASSWORD is not set in environment variables");
+  }
+
+  const managerPass = await bcrypt.hash(config.MANAGER_PASSWORD, 12);
   await prisma.user.create({
     data: {
       name: "manager",
@@ -180,13 +190,13 @@ async function updateProductRatings() {
   );
 }
 
-async function clearDB() {
-  await prisma.review.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.category.deleteMany();
-  await prisma.address.deleteMany();
-  await prisma.user.deleteMany();
-}
+// async function clearDB() {
+//   await prisma.review.deleteMany();
+//   await prisma.product.deleteMany();
+//   await prisma.category.deleteMany();
+//   await prisma.address.deleteMany();
+//   await prisma.user.deleteMany();
+// }
 
 async function seedDevData() {
   // --------------------------------------------- //
@@ -195,8 +205,8 @@ async function seedDevData() {
   const productsCount = 250;
   const reviewsCount = 3000;
   // --------------------------------------------- //
-  console.log("clear db...");
-  await clearDB();
+  // console.log("clear db...");
+  // await clearDB();
 
   logger.info("Seeding users...");
   const users = await seedUsers(usersCount);
@@ -220,14 +230,14 @@ async function seedDevData() {
 }
 
 const main = async () => {
-  if (config.env === "development") {
-    const start = performance.now();
-    await seedDevData();
-    const duration = Math.round(performance.now() - start);
-    logger.info(
-      { durationMs: duration } + "Seeding completed in " + duration + "ms",
-    );
-  }
+  // if (config.env === "development") {
+  const start = performance.now();
+  await seedDevData();
+  const duration = Math.round(performance.now() - start);
+  logger.info(
+    { durationMs: duration } + "Seeding completed in " + duration + "ms",
+  );
+  // }
 };
 
 main()
@@ -235,7 +245,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (error) => {
-    logger.error({ error } + "Error occurred while seeding data:");
+    logger.error({ error }, "Error occurred while seeding data:");
     await prisma.$disconnect();
     process.exit(1);
   });

@@ -20,6 +20,7 @@ interface IConfig {
   REFRESH_TOKEN_SECRET: string;
   MAX_CART_QUANTITY: number;
   MAX_ACTIVE_SESSIONS: number;
+  MANAGER_PASSWORD: string | undefined;
 
   //cache
   REDIS_HOST: string;
@@ -128,7 +129,7 @@ export const getConfig = (): IConfig => {
     REFRESH_TOKEN_SECRET: processEnv.REFRESH_TOKEN_SECRET!,
     MAX_CART_QUANTITY: parseInt(processEnv.MAX_CART_QUANTITY!, 10),
     MAX_ACTIVE_SESSIONS: parseInt(processEnv.MAX_ACTIVE_SESSIONS!, 10),
-
+    MANAGER_PASSWORD: processEnv.MANAGER_PASSWORD,
     // Email with safe defaults for 'test'
     EMAIL_PROVIDER:
       (processEnv.EMAIL_PROVIDER as "brevo" | "mailtrap") ?? "mailtrap",

@@ -118,7 +118,7 @@ export const getConfig = (): IConfig => {
     DB_NAME: processEnv.DB_NAME ?? "ecommerce_db",
     DATABASE_URL: processEnv.DATABASE_URL!,
     env: NODE_ENV,
-    APP_PORT: processEnv.APP_PORT ? parseInt(processEnv.APP_PORT, 10) : 3000,
+    APP_PORT: parseInt(processEnv.PORT ?? processEnv.APP_PORT ?? "3000", 10),
     BASE_URL: processEnv.BASE_URL!,
     REDIS_HOST: processEnv.REDIS_HOST ?? "dummy_redis_host",
     REDIS_PORT: processEnv.REDIS_PORT ? parseInt(processEnv.REDIS_PORT, 10) : 0,

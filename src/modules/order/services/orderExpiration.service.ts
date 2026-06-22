@@ -45,8 +45,8 @@ export class OrderExpirationService {
         await this.emailQueue.add(JOB_NAMES.EMAIL.ORDER_CANCELLED, {
           orderId: order.id,
           userId: order.userId,
-          email: order.user.email,
-          name: order.user.name,
+          email: order.user?.email,
+          name: order.user?.name,
         });
       }
     });

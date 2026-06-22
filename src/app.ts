@@ -12,7 +12,6 @@ import { paymentWebhookHandler } from "./modules/payment";
 import rootRouter from "./routes";
 
 
-
 const app = express();
 
 // Trust the first proxy hop (Heroku's router) so express-rate-limit
@@ -31,21 +30,8 @@ const httpLogger = pinoHttp({
     return `[HTTP Traffic] ${req.method} ${req.url} - Status: ${res.statusCode}`;
   },
   serializers: {
-    req: (req) => {
-      return {
-        method: req.method,
-        url: req.url,
-        headers: req.headers,
-        query: req.query,
-        params: req.params,
-      };
-    },
-    res: (res) => {
-      return {
-        statusCode: res.statusCode,
-        headers: res.getHeaders,
-      };
-    },
+    req: (req) => ({ method: req.method, url: req.url }),
+    res: (res) => ({ statusCode: res.statusCode }),
   },
 });
 
